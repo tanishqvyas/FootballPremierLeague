@@ -10,16 +10,16 @@ Real time analysis of match event data using PySpark.
 |---- backend
 |
 |---- data
-|   |---- play.csv
-|   |
-|   |---- teams.csv
-|   |
-|   |---- stream
-|   |   |---- eve.txt
-|   |   |
-|   |   |---- mat.txt
-|   |   |
-|   |   |---- stream.pyc 
+|       |---- play.csv
+|       |
+|       |---- teams.csv
+|       |
+|       |---- stream
+|       |       |---- eve.txt
+|       |       |
+|       |       |---- mat.txt
+|       |       |
+|       |       |---- stream.pyc 
 |
 |---- project information
 |
