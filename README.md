@@ -18,11 +18,11 @@ Real time analysis of match event data using PySpark.
 |	|---- teams.csv
 |	|
 |	|---- stream
-|	|		|---- eve.txt
-|	|		|
-|	|		|---- mat.txt
-|	|		|
-|	|		|---- stream.pyc 
+|	|	|---- eve.txt
+|	|	|
+|	|	|---- mat.txt
+|	|	|
+|	|	|---- stream.pyc 
 |
 |---- project information
 |
