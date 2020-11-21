@@ -1,30 +1,24 @@
-import socket
-from socket import *
-import json
+from pyspark import SparkContext
+from pyspark.streaming import StreamingContext
 
-serverPort = 6100
-serverSocket = socket(AF_INET, SOCK_STREAM)
-# Avoiding : Python [Errno 98] Address already in use
+# Create a local StreamingContext with two working thread and batch interval of 1 second
+sc = SparkContext("local[2]", appName="FantasyLeagueAnalysis")
+ssc = StreamingContext(sc, 1)
 
+# Create an input DStream that will connect to hostname:port, like localhost:9999
+lines = ssc.socketTextStream("localhost", 6100)
 
-serverSocket.bind(("", serverPort))
-serverSocket.listen(1)
+words = lines.map(lambda line: line)
 
-# TCP Server
-print("The server is listening on PORT 6100")
-
-while 1:
-
-	connectionSocket, addr = serverSocket.accept()
-	data = connectionSocket.recv(1024)
-
-	# De-serializing data
-	data_loaded = json.loads(data)
-	
-	print("client Sent :\n ", data_loaded)
-	
-	# Sending response
-	connectionSocket.send(str.encode("Mil gya data"))
+words.pprint()
 
 
-connectionSocket.close()
+
+
+# Start the computation
+ssc.start()            
+# Wait for the computation to terminate
+ssc.awaitTermination()  
+
+
+print("hello")
