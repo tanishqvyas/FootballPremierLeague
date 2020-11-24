@@ -5,6 +5,7 @@ from pyspark.streaming import StreamingContext
 sc = SparkContext(master="local[8]", appName="FantasyLeagueAnalysis")
 ssc = StreamingContext(sc, 1)
 
+
 # Create an input DStream that will connect to hostname:port, like localhost:9999
 lines = ssc.socketTextStream("localhost", 6100)
 
@@ -17,5 +18,4 @@ ssc.start()
 # Wait for the computation to terminate
 ssc.awaitTermination()  
 
-
-print("hello")
+ssc.stop(stopSparkContext=False, stopGraceFully=True)
