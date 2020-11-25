@@ -2,8 +2,8 @@ from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 
 # Create a local StreamingContext with two working thread and batch interval of 1 second
-sc = SparkContext(master="local[8]", appName="FantasyLeagueAnalysis")
-ssc = StreamingContext(sc, 1)
+sc = SparkContext(master="local[2]", appName="FantasyLeagueAnalysis")
+ssc = StreamingContext(sc, 5)
 
 
 # Create an input DStream that will connect to hostname:port, like localhost:9999
