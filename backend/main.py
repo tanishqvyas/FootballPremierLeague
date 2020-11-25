@@ -50,6 +50,11 @@ if __name__ =="__main__":
 	sc = SparkContext(appName="FantasyPremierLeague").getOrCreate()
 	ssc = SparkSession(sc)
 
+	'''
+	Note that the order of columns in the Schema must match that of the columns in the CSV file to be loaded.
+	Otherwise the schema gets incorrectly filled or doesn't get filled at places.
+	The following schemas have been initialized keeping the above thing in mind.
+	'''
 	# Player schema
 	Players_schema = tp.StructType([
 	tp.StructField(name= 'name',   			dataType= tp.StringType(),   nullable= False),
@@ -82,4 +87,29 @@ if __name__ =="__main__":
 	print(Player_RDD.show(5))
 	print(Teams_RDD.show(5))
 
+
+	# Initialize the metrics
+	# TO-DO
+
+
+	# Read the streamed data
+	strc = StreamingContext(sc, 5)
+
+	# Create an input DStream that will connect to hostname:port, like localhost:9999
+	lines = strc.socketTextStream("localhost", 6100)
+
+	# Print InputStream Data
+	lines.pprint()
+
+	# Structure the data and extract relevant data
+	
+
+	# Compute  the Metrics
+	# To-DO
+
+
+	# Start the computation & Wait for the computation to terminate
+	strc.start()
+	strc.awaitTermination()  
+	strc.stop(stopSparkContext=False, stopGraceFully=True)
 
