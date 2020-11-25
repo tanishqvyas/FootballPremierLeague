@@ -38,3 +38,23 @@ Real time analysis of match event data using PySpark.
 |
 +
 ```
+
+
+## Setup
+
+**1. Install Spark**
+
+Install spark on your system by following the instructions given in **spark.md**
+
+
+**2. Fork the Repsitory**
+
+**3. Clone the forked repository**
+
+**4. Setup the upstream**
+
+```
+git remote add upstream "https://github.com/tanishqvyas/FootballPremierLeague.git"
+```
+
+**5.Open 2 terminals and run the stream_data.py and listener.py files**
