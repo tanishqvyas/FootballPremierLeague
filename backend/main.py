@@ -191,6 +191,13 @@ def calc_metrics(rdd):
 					
 					to_insert=get_shots_effectiveness(shots_on_trgt_and_goals, shots_on_trgt_but_not_goals, total_shots)
 					# insert this into the free kick effectiveness column of the Metrics_RDD
+				
+				if x == 2:	#foul
+					foul=0	#get from dataframe
+					foul+=1
+				if 102 in v:	#own goal
+					own_goals=0	#get from dataframe
+					own_goals+=1
 		except:
 			#its match data dict
 			print("match data")
