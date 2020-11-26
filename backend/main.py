@@ -12,14 +12,11 @@ import os
 import socket
 import sys
 import threading
-
 # Custom Imports
 from utils.helper import *
 
-
-
-
-
+def splitrdd(rdd):
+	return rdd
 
 if __name__ =="__main__":
 
@@ -105,12 +102,10 @@ if __name__ =="__main__":
 	lines = strc.socketTextStream("localhost", 6100)
 
 	# Print InputStream Data
-	lines.pprint()
+	#lines.pprint()
 
 	# Structure the data and extract relevant data
-	# To-DO
-	
-
+	rdd=lines.foreach(splitrdd)
 	# Compute  the Metrics
 	# To-DO
 
