@@ -58,4 +58,4 @@ Install spark on your system by following the instructions given in **spark.md**
 git remote add upstream "https://github.com/tanishqvyas/FootballPremierLeague.git"
 ```
 
-**5.Open 2 terminals and run the stream_data.py and listener.py files**
+**5.Open 2 terminals and run the stream_data.py and main.py files**
