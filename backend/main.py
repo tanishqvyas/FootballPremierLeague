@@ -145,6 +145,27 @@ def calc_metrics(rdd):
 					to_insert=get_duel_effectiveness(num_duels_won, num_neutral_duels, total_duels)
 					# insert this into the duel effectiveness column of the Metrics_RDD
 				
+				if x == 3:	#free kick
+					#get the below values from the dataframe Metrics_RDD
+					#if None is the value start at 0
+					
+					num_penalties_scored=0
+					num_effec_free_kicks=0
+					total_free_kicks=0
+					
+					if data['subEventId'] ==35 and 101 in v:
+						num_penalties_scored+=1
+					
+					#FIND DIFFERENCE BETWEEN EFFECTIVE AND GOAL PENALTY WUT 
+					if 1801 in v:
+						#effective
+						total_free_kicks+=1
+					elif 1802 in v:
+						# not effective
+						num_effec_free_kicks+=1
+						total_free_kicks+=1
+					to_insert=get_freekick_effectiveness(num_effec_free_kicks, num_penalties_scored, total_free_kicks)
+					# insert this into the free kick effectiveness column of the Metrics_RDD
 		except:
 			#its match data dict
 			print("match data")
