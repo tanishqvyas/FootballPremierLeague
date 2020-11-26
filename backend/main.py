@@ -166,6 +166,31 @@ def calc_metrics(rdd):
 						total_free_kicks+=1
 					to_insert=get_freekick_effectiveness(num_effec_free_kicks, num_penalties_scored, total_free_kicks)
 					# insert this into the free kick effectiveness column of the Metrics_RDD
+				
+				if x == 10:	#shots effectiveness
+					#get the below values from the dataframe Metrics_RDD
+					#if None is the value start at 0
+					
+					shots_on_trgt_and_goals=0
+					shots_on_trgt_but_not_goals=0
+					total_shots=0
+					
+					#FIND DIFFERENCE BETWEEN EFFECTIVE AND GOAL PENALTY WUT 
+					if 1801 in v:
+						#on traget
+						total_shots+=1
+						if 101 in v:
+							#goal shot
+							shots_on_trgt_and_goals+=1
+						else:
+							#not goal but target
+							shots_on_trgt_but_not_goals+=1
+					elif 1802 in v:
+						# not on target
+						total_shots+=1
+					
+					to_insert=get_shots_effectiveness(shots_on_trgt_and_goals, shots_on_trgt_but_not_goals, total_shots)
+					# insert this into the free kick effectiveness column of the Metrics_RDD
 		except:
 			#its match data dict
 			print("match data")
