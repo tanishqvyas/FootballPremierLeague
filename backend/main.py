@@ -98,14 +98,14 @@ def calc_metrics(rdd):
 			if 'eventId' in data:
 				x=data['eventId']
 				v=[j['id'] for j in data['tags']]
-				check=0
-				#get the below values from the dataframe Metrics_RDD
-				#if None is the value start at 0
-				num_acc_normal_passes=0
-				num_acc_key_passes=0
-				num_normal_passes=0
-				num_key_passes=0
+				
 				if x == 8:	#Pass
+					#get the below values from the dataframe Metrics_RDD
+					#if None is the value start at 0
+					num_acc_normal_passes=0
+					num_acc_key_passes=0
+					num_normal_passes=0
+					num_key_passes=0
 					if 1801 in v:
 						#accurate pass
 						if 302 in v:
@@ -124,7 +124,27 @@ def calc_metrics(rdd):
 						num_key_passes+=1
 					to_insert=get_pass_accuracy(num_acc_normal_passes, num_acc_key_passes, num_normal_passes, num_key_passes)
 					# insert this into the passaccuracy column of the Metrics_RDD
-						
+				
+				if x == 1:	#duels
+					#get the below values from the dataframe Metrics_RDD
+					#if None is the value start at 0
+					num_duels_won=0
+					num_neutral_duels=0
+					total_duels=0
+					if 701 in v:
+						#lost
+						total_duels+=1
+					elif 702 in v:
+						# neutral
+						num_neutral_duels+=1
+						total_duels+=1
+					elif 703 in v:
+						# won
+						num_duels_won+=1
+						total_duels+=1
+					to_insert=get_duel_effectiveness(num_duels_won, num_neutral_duels, total_duels)
+					# insert this into the duel effectiveness column of the Metrics_RDD
+				
 		except:
 			#its match data dict
 			print("match data")
