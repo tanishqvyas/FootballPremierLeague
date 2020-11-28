@@ -13,8 +13,11 @@ import os
 import socket
 import sys
 import threading
+from threading import Thread
+
 # Custom Imports
 from utils.helper import *
+from User_Interface import start_user_service
 
 
 
@@ -45,7 +48,7 @@ tp.StructField(name= 'Id', 				dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numFouls', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numGoals', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numOwnGoals', 	dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passAcc', 	dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'passAcc', 		dataType= tp.IntegerType(),  nullable= False),
 ])
 
 # Teams Schema
@@ -61,9 +64,7 @@ Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
 sql.registerDataFrameAsTable(Player_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")
 
-# Print the head
-#print(Player_RDD.show(5))
-#print(Teams_RDD.show(5))
+
 
 #CReating metrics dataframe
 cols=['Id','normalPasses', 'keyPasses',  'accNormalPasses', 'accKeyPasses','passAccuracy','duelsWon', 'neutralDuels','totalDuels', 'duelEffectiveness', 'effectiveFreeKicks', 'penaltiesScored', 'totalFreeKicks','freeKick', 'targetAndGoal',  'targetNotGoal','totalShots', 'shotsOnTarget', 'shotsEffectiveness', 'foulLoss', 'ownGoals']
@@ -73,7 +74,6 @@ for i in df:
 	a.append((i[0],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
 Metrics_RDD=ssc.createDataFrame(a, cols)
 sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
-#print(Metrics_RDD.show(5))
 
 '''
 #TRIAL
@@ -82,6 +82,9 @@ df2 =Metrics_RDD.filter(Metrics_RDD.Id == player)
 print(df2.collect()[0][0])
 Metrics_RDD=Metrics_RDD.withColumn("Id",F.when(F.col("Id")==player,1000).otherwise(F.col("Id")))
 print(Metrics_RDD.show(5))
+
+
+Function to process the match and event Jsons
 '''
 def calc_metrics(rdd):
 	global Metrics_RDD
@@ -220,6 +223,15 @@ def calc_metrics(rdd):
 			print("match data")
 
 
+
+
+
+
+# Runnning the User CLI as a separate Thread
+thread = Thread(target = start_user_service)
+thread.start()
+
+
 # Read the streamed data
 strc = StreamingContext(sc, 5)
 
@@ -227,26 +239,16 @@ strc = StreamingContext(sc, 5)
 lines = strc.socketTextStream("localhost", 6100)
 
 # Print InputStream Data
+# lines.pprint()
 
-#lines.pprint()
-# Structure the data and extract relevant data
-#data=lines.map(lambda line:json.loads(line))
-
+# Calculate Metrics for all input stream
 lines.foreachRDD(calc_metrics)
 
-#data=lines.map(lambda line:json.loads(line))
-#data.pprint()
-#lines=lines.map(lambda line:calc_metrics(line))
-#lines.pprint()
-# Compute  the Metrics
-# To-DO
+
 
 
 # Start the computation & Wait for the computation to terminate
 strc.start()
-
-
-
 strc.awaitTermination()  
 strc.stop(stopSparkContext=False, stopGraceFully=True)
 
