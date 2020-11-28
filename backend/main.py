@@ -215,6 +215,10 @@ def calc_metrics(rdd):
 				if 102 in v:	#own goal
 					own_goals=values[20]	#get from dataframe
 					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(own_goals+1)).otherwise(F.col("ownGoals")))
+				
+				#checking Metrics	
+				df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
+				print(df2.collect()[0])
 		except:
 			#its match data dict
 			print("match data")
