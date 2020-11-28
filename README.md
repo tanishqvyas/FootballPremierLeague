@@ -9,20 +9,27 @@ Real time analysis of match event data using PySpark.
 +
 |---- backend
 |	|
-|	|---- listener.py
-|	|---- datastreamer.py
 |	|---- main.py
+|	|---- User_Interface.py
 |	|
+|   |---- request_response_data
+|	|	|
+|	|	|---- request.txt
+|	|	|---- response.txt
+|   |   
+|   |
 |	|---- utils
 |	|	|
 |	|	|---- helper.py
 |
 |---- data
-|	|---- play.csv
+|	|
+|	|---- players.csv
 |	|
 |	|---- teams.csv
 |	|
 |	|---- stream
+|	|	|
 |	|	|---- eve.txt
 |	|	|
 |	|	|---- mat.txt
