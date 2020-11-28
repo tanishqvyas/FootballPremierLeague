@@ -65,4 +65,6 @@ Install spark on your system by following the instructions given in **spark.md**
 git remote add upstream "https://github.com/tanishqvyas/FootballPremierLeague.git"
 ```
 
-**5.Open 2 terminals and run the stream_data.py and main.py files**
+**5. Download eve.txt file from the Forums and place it in the directory as shown in folder structure**
+
+**6. Open 2 terminals and run the stream_data.py and main.py files**
