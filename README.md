@@ -9,20 +9,27 @@ Real time analysis of match event data using PySpark.
 +
 |---- backend
 |	|
-|	|---- listener.py
-|	|---- datastreamer.py
 |	|---- main.py
+|	|---- User_Interface.py
 |	|
+|   |---- request_response_data
+|	|	|
+|	|	|---- request.txt
+|	|	|---- response.txt
+|   |   
+|   |
 |	|---- utils
 |	|	|
 |	|	|---- helper.py
 |
 |---- data
-|	|---- play.csv
+|	|
+|	|---- players.csv
 |	|
 |	|---- teams.csv
 |	|
 |	|---- stream
+|	|	|
 |	|	|---- eve.txt
 |	|	|
 |	|	|---- mat.txt
@@ -58,4 +65,6 @@ Install spark on your system by following the instructions given in **spark.md**
 git remote add upstream "https://github.com/tanishqvyas/FootballPremierLeague.git"
 ```
 
-**5.Open 2 terminals and run the stream_data.py and main.py files**
+**5. Download eve.txt file from the Forums and place it in the directory as shown in folder structure**
+
+**6. Open 2 terminals and run the stream_data.py and main.py files**
