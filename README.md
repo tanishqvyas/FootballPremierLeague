@@ -12,12 +12,12 @@ Real time analysis of match event data using PySpark.
 |	|---- main.py
 |	|---- User_Interface.py
 |	|
-| |---- request_response_data
+|     |---- request_response_data
 |	|	|
 |	|	|---- request.txt
 |	|	|---- response.txt
-| |   
-| |
+|     |   
+|     |
 |	|---- utils
 |	|	|
 |	|	|---- helper.py
