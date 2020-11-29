@@ -64,16 +64,22 @@ Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
 sql.registerDataFrameAsTable(Player_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")
 
-
-
-#CReating metrics dataframe
+#Creating metrics dataframe
 cols=['Id','normalPasses', 'keyPasses',  'accNormalPasses', 'accKeyPasses','passAccuracy','duelsWon', 'neutralDuels','totalDuels', 'duelEffectiveness', 'effectiveFreeKicks', 'penaltiesScored', 'totalFreeKicks','freeKick', 'targetAndGoal',  'targetNotGoal','totalShots', 'shotsOnTarget', 'shotsEffectiveness', 'foulLoss', 'ownGoals']
 df = sql.sql("select Id from Player").collect()
 a=[]
 for i in df:
-	a.append((i[0],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+	a.append((i[0],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
 Metrics_RDD=ssc.createDataFrame(a, cols)
 sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
+
+
+#Creating matches dataframe
+b=[]
+cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards','contribs','duelEffectiveness','freeKick','shotsOnTarget']
+b.append((None,None,None,None,None,None,None,None,None,[],[],[],[]))
+Matches_RDD=ssc.createDataFrame(b, cols)
+sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 
 '''
 #TRIAL
@@ -88,6 +94,7 @@ Function to process the match and event Jsons
 '''
 def calc_metrics(rdd):
 	global Metrics_RDD
+	global Matches_RDD
 	global sql
 	#print(rdd,type(rdd))
 	rdds=[json.loads(i) for i in rdd.collect()]
@@ -123,6 +130,7 @@ def calc_metrics(rdd):
 					elif 302 in v:
 						# key pass
 						num_key_passes+=1
+					per_match_pass_accuracy=get_pass_accuracy(num_acc_normal_passes-values[3], num_acc_key_passes-values[4], num_normal_passes-values[1], num_key_passes-values[2])
 					to_insert=get_pass_accuracy(num_acc_normal_passes, num_acc_key_passes, num_normal_passes, num_key_passes)
 					# insert this into the passaccuracy column of the Metrics_RDD
 					Metrics_RDD=Metrics_RDD.withColumn("passAccuracy",F.when(F.col("Id")==player,to_insert).otherwise(F.col("passAccuracy")))
@@ -225,8 +233,49 @@ def calc_metrics(rdd):
 		except:
 			#its match data dict
 			print("match data")
-
-
+			#INSERT INTO Matches_RDD
+			#
+			#
+			#
+			if data['status']=='Played':
+				#match is over # OR IS THERE SOME OTHER VALUE
+				
+				for i in data['teamsData']:
+					#i is the teamID
+					bench=[i['playerId'] for i in data['teamsData'][i]['formation']['bench']]
+					lineup=[i['playerId'] for i in data['teamsData'][i]['formation']['lineup']]
+					substitutions=data['teamsData'][i]['formation']['substitutions']
+					playedtime=[]
+					for j in substitutions:	# FIND OUT IF THERE ARE ONLY 3 SUBS PER MATCH FROM SIR
+						inplayer=j['playerIn']
+						outplayer=j['playerOut']
+						minute=j['minute']
+						
+						if inplayer in bench:#cuz in player cant be in lineup
+							#INSERT A METRIC AS TIME PLAYED
+							playedtime.append((inplayer,(90-minute)/90.0))
+							bench.remove(inplayer)
+						if outplayer in lineup:
+							playedtime.append((outplayer,(minute)/90.0))
+							outplayer.remove(outplayer)
+							continue
+						for k in len(playedtime):
+							if playedtime[k][0]==outplayer:
+								playedtime[k][1]=(playedtime[k][1]*90.0)-90+minute
+								break
+	
+					for j in bench:
+						df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
+						values=df2.collect()[0]
+						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j,0).otherwise(F.col("playerContribution")))
+					for j in lineup:
+						df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
+						values=df2.collect()[0]
+						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j,(1.05*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("playerContribution")))
+					for j in playedtime:
+						df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
+						values=df2.collect()[0]
+						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j[0],(j[1]*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("playerContribution")))
 
 
 
