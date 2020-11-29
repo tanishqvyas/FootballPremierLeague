@@ -85,11 +85,11 @@ sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
 
 
 #Creating matches dataframe
-b=[]
-cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']#NEED TO STORE ALL MATCH DETAILS ALSO
-b.append((None,None,None,None,None,None,None,None,None))
-Matches_RDD=ssc.createDataFrame(b, cols)
-sql.registerDataFrameAsTable(Matches_RDD, "Matches")
+# b=[]
+# cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']#NEED TO STORE ALL MATCH DETAILS ALSO
+# b.append((None,None,None,None,None,None,None,None,None))
+# Matches_RDD=ssc.createDataFrame(b, cols)
+# sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 
 '''
 #TRIAL
@@ -342,7 +342,7 @@ def calc_metrics(rdd):
 
 
 # Runnning the User CLI as a separate Thread
-thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
+thread = Thread(target = start_user_service, args=(Metrics_RDD, Players_RDD))
 thread.start()
 
 

@@ -5,7 +5,7 @@ import time
 import os
 
 # Function to handle request 1
-def handle_request_one(request):
+def handle_request_one(request, Metrics_RDD, Player_RDD):
     
     # Invalid request handler variables
     msg = "Invalid Request"
@@ -162,7 +162,7 @@ def handle_request_two(request, Metrics_RDD, Player_RDD):
 
 
 # Function to handle request 3
-def handle_request_three(request):
+def handle_request_three(request, Metrics_RDD, Player_RDD):
     
     # Invalid request handler variables
     msg = "Invalid Request"
@@ -201,13 +201,13 @@ def handle_request_three(request):
 def request_handler(req_type, request, Metrics_RDD, Player_RDD):
     
     if(req_type == 1):
-        return handle_request_one(request)
+        return handle_request_one(request, Metrics_RDD, Player_RDD)
     
     elif (req_type == 2):
         return handle_request_two(request, Metrics_RDD, Player_RDD)
     
     elif (req_type == 3):
-        return handle_request_three(request)
+        return handle_request_three(request, Metrics_RDD, Player_RDD)
     
     else:
         response = dict()
