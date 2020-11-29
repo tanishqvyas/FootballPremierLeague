@@ -49,6 +49,11 @@ tp.StructField(name= 'numFouls', 		dataType= tp.IntegerType(),  nullable= False)
 tp.StructField(name= 'numGoals', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numOwnGoals', 	dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'passAcc', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'normalPasses', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'rating', 		dataType= tp.IntegerType(),  nullable= False)
 ])
 
 # Teams Schema
@@ -64,8 +69,10 @@ Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
 sql.registerDataFrameAsTable(Player_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")
 
-#Creating metrics dataframe
-cols=['Id','normalPasses', 'keyPasses',  'accNormalPasses', 'accKeyPasses','passAccuracy','duelsWon', 'neutralDuels','totalDuels', 'duelEffectiveness', 'effectiveFreeKicks', 'penaltiesScored', 'totalFreeKicks','freeKick', 'targetAndGoal',  'targetNotGoal','totalShots', 'shotsOnTarget', 'shotsEffectiveness', 'foulLoss', 'ownGoals']
+
+
+#Creating metrics of the per match as a whole dataframe
+cols=['Id','normalPasses', 'keyPasses','accNormalPasses', 'accKeyPasses','passAccuracy','duelsWon', 'neutralDuels','totalDuels', 'duelEffectiveness', 'effectiveFreeKicks', 'penaltiesScored', 'totalFreeKicks','freeKick', 'targetAndGoal', 'targetNotGoal','totalShots', 'shotsOnTarget', 'shotsEffectiveness', 'foulLoss', 'ownGoals','contribution']
 df = sql.sql("select Id from Player").collect()
 a=[]
 for i in df:
@@ -76,8 +83,8 @@ sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
 
 #Creating matches dataframe
 b=[]
-cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards','contribs','duelEffectiveness','freeKick','shotsOnTarget']
-b.append((None,None,None,None,None,None,None,None,None,[],[],[],[]))
+cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']#NEED TO STORE ALL MATCH DETAILS ALSO
+b.append((None,None,None,None,None,None,None,None,None))
 Matches_RDD=ssc.createDataFrame(b, cols)
 sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 
@@ -95,14 +102,18 @@ Function to process the match and event Jsons
 def calc_metrics(rdd):
 	global Metrics_RDD
 	global Matches_RDD
+	global Players_RDD
 	global sql
 	#print(rdd,type(rdd))
 	rdds=[json.loads(i) for i in rdd.collect()]
 	for data in rdds:
-		try:
+		if 'playerId' in data:
 			player=data['playerId']
-			df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
+			df2=Players_RDD.filter(Players_RDD.Id == player)
 			values=df2.collect()[0]
+			
+			df3=Metrics_RDD.filter(Metrics_RDD.Id == player)
+			metrics_values=df3.collect()[0]
 			if 'eventId' in data:
 				x=data['eventId']
 				v=[j['id'] for j in data['tags']]
@@ -110,41 +121,59 @@ def calc_metrics(rdd):
 				if x == 8:	#Pass
 					#get the below values from the dataframe Metrics_RDD
 					#if None is the value start at 0
-					num_acc_normal_passes=values[3]
-					num_acc_key_passes=values[4]
-					num_normal_passes=values[1]
-					num_key_passes=values[2]
+					num_acc_normal_passes=values[15]
+					num_acc_key_passes=values[16]
+					num_normal_passes=values[13]
+					num_key_passes=values[14]
+					
+					match_num_acc_normal_passes=metrics_values[3]
+					match_num_acc_key_passes=metrics_values[4]
+					match_num_normal_passes=metrics_values[1]
+					match_num_key_passes=metrics_values[2]
+					
 					if 1801 in v:
 						#accurate pass
 						if 302 in v:
-							num_acc_key_passes+=1
-							num_key_passes+=1
+							match_num_acc_key_passes+=1
+							match_num_key_passes+=1
 						else:
-							num_acc_normal_passes+=1
-							num_normal_passes+=1
+							match_num_acc_normal_passes+=1
+							match_num_normal_passes+=1
 					elif 1802 in v:
 						# not accurate pass
-						num_normal_passes+=1
+						match_num_normal_passes+=1
 					#is there anything like not accurate key pass
 					
 					elif 302 in v:
 						# key pass
-						num_key_passes+=1
-					per_match_pass_accuracy=get_pass_accuracy(num_acc_normal_passes-values[3], num_acc_key_passes-values[4], num_normal_passes-values[1], num_key_passes-values[2])
+						match_num_key_passes+=1
+					
+					#FOR CURRENT MATCH
+					per_match_pass_accuracy=get_pass_accuracy(match_num_acc_normal_passes, match_num_acc_key_passes, match_num_normal_passes, match_num_key_passes)
+					Metrics_RDD=Metrics_RDD.withColumn("passAccuracy",F.when(F.col("Id")==player,per_match_pass_accuracy).otherwise(F.col("passAccuracy")))
+					Metrics_RDD=Metrics_RDD.withColumn("normalPasses",F.when(F.col("Id")==player,match_num_normal_passes).otherwise(F.col("normalPasses")))
+					Metrics_RDD=Metrics_RDD.withColumn("keyPasses",F.when(F.col("Id")==player,match_num_key_passes).otherwise(F.col("keyPasses")))
+					Metrics_RDD=Metrics_RDD.withColumn("accNormalPasses",F.when(F.col("Id")==player,match_num_acc_normal_passes).otherwise(F.col("accNormalPasses")))
+					Metrics_RDD=Metrics_RDD.withColumn("accKeyPasses",F.when(F.col("Id")==player,match_num_acc_key_passes).otherwise(F.col("accKeyPasses")))
+				
+					#FOR WHOLE PLAYER
+					num_acc_normal_passes+=match_num_acc_normal_passes
+					num_acc_key_passes+=match_num_acc_key_passes
+					num_normal_passes+=match_num_normal_passes
+					num_key_passes+=match_num_key_passes
 					to_insert=get_pass_accuracy(num_acc_normal_passes, num_acc_key_passes, num_normal_passes, num_key_passes)
-					# insert this into the passaccuracy column of the Metrics_RDD
-					Metrics_RDD=Metrics_RDD.withColumn("passAccuracy",F.when(F.col("Id")==player,to_insert).otherwise(F.col("passAccuracy")))
-					Metrics_RDD=Metrics_RDD.withColumn("normalPasses",F.when(F.col("Id")==player,num_normal_passes).otherwise(F.col("normalPasses")))
-					Metrics_RDD=Metrics_RDD.withColumn("keyPasses",F.when(F.col("Id")==player,num_key_passes).otherwise(F.col("keyPasses")))
-					Metrics_RDD=Metrics_RDD.withColumn("accNormalPasses",F.when(F.col("Id")==player,num_acc_normal_passes).otherwise(F.col("accNormalPasses")))
-					Metrics_RDD=Metrics_RDD.withColumn("accKeyPasses",F.when(F.col("Id")==player,num_acc_key_passes).otherwise(F.col("accKeyPasses")))
+					Players_RDD=Players_RDD.withColumn("passAcc",F.when(F.col("Id")==player,to_insert).otherwise(F.col("passAcc")))
+					Players_RDD=Players_RDD.withColumn("normalPasses",F.when(F.col("Id")==player,num_normal_passes).otherwise(F.col("normalPasses")))
+					Players_RDD=Players_RDD.withColumn("keyPasses",F.when(F.col("Id")==player,num_key_passes).otherwise(F.col("keyPasses")))
+					Players_RDD=Players_RDD.withColumn("accNormalPasses",F.when(F.col("Id")==player,num_acc_normal_passes).otherwise(F.col("accNormalPasses")))
+					Players_RDD=Players_RDD.withColumn("accKeyPasses",F.when(F.col("Id")==player,num_acc_key_passes).otherwise(F.col("accKeyPasses")))
 				
 				if x == 1:	#duels
 					#get the below values from the dataframe Metrics_RDD
-					#if None is the value start at 0
-					num_duels_won=values[6]
-					num_neutral_duels=values[7]
-					total_duels=values[8]
+					#MAKE SURE TO RESET THE METRICS RDD EACH TIME
+					num_duels_won=metrics_values[6]
+					num_neutral_duels=metrics_values[7]
+					total_duels=metrics_values[8]
 					if 701 in v:
 						#lost
 						total_duels+=1
@@ -156,8 +185,11 @@ def calc_metrics(rdd):
 						# won
 						num_duels_won+=1
 						total_duels+=1
-					to_insert=get_duel_effectiveness(num_duels_won, num_neutral_duels, total_duels)
-					# insert this into the duel effectiveness column of the Metrics_RDD
+					
+					
+					per_match_duel_effectiveness=get_duel_effectiveness(num_duels_won, num_neutral_duels, total_duels)
+					
+					# Per_match
 					Metrics_RDD=Metrics_RDD.withColumn("duelEffectiveness",F.when(F.col("Id")==player,to_insert).otherwise(F.col("duelEffectiveness")))
 					Metrics_RDD=Metrics_RDD.withColumn("totalDuels",F.when(F.col("Id")==player,total_duels).otherwise(F.col("totalDuels")))
 					Metrics_RDD=Metrics_RDD.withColumn("neutralDuels",F.when(F.col("Id")==player,num_neutral_duels).otherwise(F.col("neutralDuels")))
@@ -168,9 +200,9 @@ def calc_metrics(rdd):
 					#get the below values from the dataframe Metrics_RDD
 					#if None is the value start at 0
 					
-					num_effec_free_kicks=values[10]
-					num_penalties_scored=values[11]
-					total_free_kicks=values[12]
+					num_effec_free_kicks=metrics_values[10]
+					num_penalties_scored=metrics_values[11]
+					total_free_kicks=metrics_values[12]
 					
 					if data['subEventId'] ==35 and 101 in v:
 						num_penalties_scored+=1
@@ -183,7 +215,11 @@ def calc_metrics(rdd):
 						# not effective
 						num_effec_free_kicks+=1
 						total_free_kicks+=1
+					
+					
+					#per_match_freekick_effectiveness=get_freekick_effectiveness(num_effec_free_kicks-values[10], num_penalties_scored-values[11], total_free_kicks-values[12])
 					to_insert=get_freekick_effectiveness(num_effec_free_kicks, num_penalties_scored, total_free_kicks)
+					
 					# insert this into the free kick effectiveness column of the Metrics_RDD
 					Metrics_RDD=Metrics_RDD.withColumn("freeKick",F.when(F.col("Id")==player,to_insert).otherwise(F.col("freeKick")))
 					Metrics_RDD=Metrics_RDD.withColumn("effectiveFreeKicks",F.when(F.col("Id")==player,num_effec_free_kicks).otherwise(F.col("effectiveFreeKicks")))
@@ -194,11 +230,15 @@ def calc_metrics(rdd):
 					#get the below values from the dataframe Metrics_RDD
 					#if None is the value start at 0
 
-					shots_on_trgt_and_goals=values[14]
-					shots_on_trgt_but_not_goals=values[15]
-					total_shots=values[16]
-					shotsOnTarget=values[17]
-					#FIND DIFFERENCE BETWEEN EFFECTIVE AND GOAL PENALTY WUT 
+					shots_on_trgt_and_goals=metrics_values[14]
+					shots_on_trgt_but_not_goals=metrics_values[15]
+					total_shots=metrics_values[16]
+					shotsOnTarget=metrics_values[17]
+					
+					goals=values[8]
+					#FIND DIFFERENCE BETWEEN EFFECTIVE AND GOAL PENALTY WUT
+					if 101 in v:
+						goals+=1
 					if 1801 in v:
 						#on traget
 						total_shots+=1
@@ -211,8 +251,12 @@ def calc_metrics(rdd):
 					elif 1802 in v:
 						# not on target
 						total_shots+=1
+						
+					
 					shotsOnTarget+=shots_on_trgt_and_goals+shots_on_trgt_but_not_goals
+					
 					to_insert=get_shots_effectiveness(shots_on_trgt_and_goals, shots_on_trgt_but_not_goals, total_shots)
+					
 					# insert this into the free kick effectiveness column of the Metrics_RDD
 					Metrics_RDD=Metrics_RDD.withColumn("shotsEffectiveness",F.when(F.col("Id")==player,to_insert).otherwise(F.col("shotsEffectiveness")))
 					Metrics_RDD=Metrics_RDD.withColumn("shotsOnTarget",F.when(F.col("Id")==player,shotsOnTarget).otherwise(F.col("shotsOnTarget")))
@@ -220,64 +264,76 @@ def calc_metrics(rdd):
 					Metrics_RDD=Metrics_RDD.withColumn("targetNotGoal",F.when(F.col("Id")==player,shots_on_trgt_but_not_goals).otherwise(F.col("targetNotGoal")))
 					Metrics_RDD=Metrics_RDD.withColumn("targetAndGoal",F.when(F.col("Id")==player,shots_on_trgt_and_goals).otherwise(F.col("targetAndGoal")))
 				
-				if x == 2:	#foul
-					foul=values[19]	#get from dataframe
-					Metrics_RDD=Metrics_RDD.withColumn("foulLoss",F.when(F.col("Id")==player,(foul+1)).otherwise(F.col("foulLoss")))
-				if 102 in v:	#own goal
-					own_goals=values[20]	#get from dataframe
-					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(own_goals+1)).otherwise(F.col("ownGoals")))
 				
-				#checking Metrics	
+					Players_RDD=Players_RDD.withColumn("numGoals",F.when(F.col("Id")==player,goals).otherwise(F.col("numGoals")))
+				if x == 2:	#foul
+					foul=values[7]	#values[19]	#get from dataframe
+					Players_RDD=Players_RDD.withColumn("numFouls",F.when(F.col("Id")==player,(foul+1)).otherwise(F.col("numFouls")))
+					permatch_foul=metrics_values[19]
+					Metrics_RDD=Metrics_RDD.withColumn("foulLoss",F.when(F.col("Id")==player,(permatch_foul+1)).otherwise(F.col("foulLoss")))
+				if 102 in v:	#own goal
+					own_goals=values[9]	#get from dataframe
+					Players_RDD=Players_RDD.withColumn("numOwnGoals",F.when(F.col("Id")==player,(own_goals+1)).otherwise(F.col("numOwnGoals")))
+					permatch_own_goals=metrics_values[20]
+					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(permatch_own_goals+1)).otherwise(F.col("ownGoals")))
+				
+				
+				#checking Metrics per match and player profiles updated	
 				df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
 				print(df2.collect()[0])
-		except:
+				'''
+				df2=Players_RDD.filter(Players_RDD.Id == player)
+				print(df2.collect()[0])
+				'''
+		else:
 			#its match data dict
 			print("match data")
 			#INSERT INTO Matches_RDD
 			#
 			#
 			#
-			if data['status']=='Played':
-				#match is over # OR IS THERE SOME OTHER VALUE
+			stored=data
+	if stored['status']=='Played':
+		#match is over # OR IS THERE SOME OTHER VALUE
+		
+		for i in stored['teamsData']:
+			#i is the teamID
+			bench=[i['playerId'] for i in stored['teamsData'][i]['formation']['bench']]
+			lineup=[i['playerId'] for i in stored['teamsData'][i]['formation']['lineup']]
+			substitutions=stored['teamsData'][i]['formation']['substitutions']
+			playedtime=[]
+			for j in substitutions:	# FIND OUT IF THERE ARE ONLY 3 SUBS PER MATCH FROM SIR
+				inplayer=j['playerIn']
+				outplayer=j['playerOut']
+				minute=j['minute']
 				
-				for i in data['teamsData']:
-					#i is the teamID
-					bench=[i['playerId'] for i in data['teamsData'][i]['formation']['bench']]
-					lineup=[i['playerId'] for i in data['teamsData'][i]['formation']['lineup']]
-					substitutions=data['teamsData'][i]['formation']['substitutions']
-					playedtime=[]
-					for j in substitutions:	# FIND OUT IF THERE ARE ONLY 3 SUBS PER MATCH FROM SIR
-						inplayer=j['playerIn']
-						outplayer=j['playerOut']
-						minute=j['minute']
-						
-						if inplayer in bench:#cuz in player cant be in lineup
-							#INSERT A METRIC AS TIME PLAYED
-							playedtime.append((inplayer,(90-minute)/90.0))
-							bench.remove(inplayer)
-						if outplayer in lineup:
-							playedtime.append((outplayer,(minute)/90.0))
-							outplayer.remove(outplayer)
-							continue
-						for k in len(playedtime):
-							if playedtime[k][0]==outplayer:
-								playedtime[k][1]=(playedtime[k][1]*90.0)-90+minute
-								break
-	
-					for j in bench:
-						df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
-						values=df2.collect()[0]
-						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j,0).otherwise(F.col("playerContribution")))
-					for j in lineup:
-						df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
-						values=df2.collect()[0]
-						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j,(1.05*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("playerContribution")))
-					for j in playedtime:
-						df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
-						values=df2.collect()[0]
-						Metrics_RDD=Metrics_RDD.withColumn("playerContribution",F.when(F.col("Id")==j[0],(j[1]*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("playerContribution")))
-
-
+				if inplayer in bench:#cuz in player cant be in lineup
+					#INSERT A METRIC AS TIME PLAYED
+					playedtime.append((inplayer,(90-minute)/90.0))
+					bench.remove(inplayer)
+				if outplayer in lineup:
+					playedtime.append((outplayer,(minute)/90.0))
+					outplayer.remove(outplayer)
+					continue
+				for k in len(playedtime):
+					if playedtime[k][0]==outplayer:
+						playedtime[k][1]=(playedtime[k][1]*90.0)-90+minute
+						break
+			
+			players_who_played=
+			for j in bench:
+				Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,0).otherwise(F.col("contribution")))
+			for j in lineup:
+				df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
+				values=df2.collect()[0]
+				Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,(1.05*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("contribution")))
+			for j in playedtime:
+				df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
+				values=df2.collect()[0]
+				Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j[0],(j[1]*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("contribution")))
+				
+			
+			#MUST CALCULATE RATINGS
 
 
 # Runnning the User CLI as a separate Thread
