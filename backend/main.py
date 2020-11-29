@@ -45,11 +45,11 @@ tp.StructField(name= 'height',   				dataType= tp.IntegerType(),  nullable= Fals
 tp.StructField(name= 'passportArea',   			dataType= tp.StringType(),   nullable= False),
 tp.StructField(name= 'weight',   				dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'Id', 						dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numFouls', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numGoals', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numOwnGoals', 			dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passAcc', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'percentShotsOnTarget', 	dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'fouls', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'goals', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'own_goals', 			dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'percent_pass_accuracy', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'percent_shots_on_target', 	dataType= tp.IntegerType(),  nullable= False),
 ])
 
 # Teams Schema
@@ -89,6 +89,7 @@ Function to process the match and event Jsons
 '''
 def calc_metrics(rdd):
 	global Metrics_RDD
+
 	global sql
 	#print(rdd,type(rdd))
 	rdds=[json.loads(i) for i in rdd.collect()]
@@ -233,7 +234,7 @@ def calc_metrics(rdd):
 
 
 # Runnning the User CLI as a separate Thread
-thread = Thread(target = start_user_service)
+thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
 thread.start()
 
 
