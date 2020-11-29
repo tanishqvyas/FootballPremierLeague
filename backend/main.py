@@ -49,6 +49,7 @@ tp.StructField(name= 'numFouls', 		dataType= tp.IntegerType(),  nullable= False)
 tp.StructField(name= 'numGoals', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numOwnGoals', 	dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'passAcc', 		dataType= tp.FloatType(),  nullable= False),
+tp.StructField(name= 'shotsOnTarget', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'normalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
@@ -123,10 +124,10 @@ def calc_metrics(rdd):
 				if x == 8:	#Pass
 					#get the below values from the dataframe Metrics_RDD
 					#if None is the value start at 0
-					num_acc_normal_passes=values[15]
-					num_acc_key_passes=values[16]
-					num_normal_passes=values[13]
-					num_key_passes=values[14]
+					num_acc_normal_passes=values[16]
+					num_acc_key_passes=values[17]
+					num_normal_passes=values[14]
+					num_key_passes=values[15]
 					
 					match_num_acc_normal_passes=metrics_values[3]
 					match_num_acc_key_passes=metrics_values[4]
@@ -237,6 +238,7 @@ def calc_metrics(rdd):
 					total_shots=metrics_values[16]
 					shotsOnTarget=metrics_values[17]
 					
+					player_shots_on_target=values[13]
 					goals=values[8]
 					#FIND DIFFERENCE BETWEEN EFFECTIVE AND GOAL PENALTY WUT
 					if 101 in v:
@@ -266,7 +268,8 @@ def calc_metrics(rdd):
 					Metrics_RDD=Metrics_RDD.withColumn("targetNotGoal",F.when(F.col("Id")==player,shots_on_trgt_but_not_goals).otherwise(F.col("targetNotGoal")))
 					Metrics_RDD=Metrics_RDD.withColumn("targetAndGoal",F.when(F.col("Id")==player,shots_on_trgt_and_goals).otherwise(F.col("targetAndGoal")))
 				
-				
+					player_shots_on_target+=shotsOnTarget
+					Players_RDD=Players_RDD.withColumn("shotsOnTarget",F.when(F.col("Id")==player,player_shots_on_target).otherwise(F.col("shotsOnTarget")))
 					Players_RDD=Players_RDD.withColumn("numGoals",F.when(F.col("Id")==player,goals).otherwise(F.col("numGoals")))
 				if x == 2:	#foul
 					foul=values[7]	#values[19]	#get from dataframe
