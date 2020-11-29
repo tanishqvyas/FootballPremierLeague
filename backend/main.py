@@ -36,25 +36,26 @@ The following schemas have been initialized keeping the above thing in mind.
 '''
 # Player schema
 Players_schema = tp.StructType([
-tp.StructField(name= 'name',   			dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'birthArea',   	dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'birthDate',   	dataType= tp.TimestampType(),   nullable= False),
-tp.StructField(name= 'foot',   			dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'role',   			dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'height',   		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passportArea',   	dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'weight',   		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'Id', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numFouls', 		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numGoals', 		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'numOwnGoals', 	dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passAcc', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'name',   					dataType= tp.StringType(),   nullable= False),
+tp.StructField(name= 'birthArea',   			dataType= tp.StringType(),   nullable= False),
+tp.StructField(name= 'birthDate',   			dataType= tp.TimestampType(),   nullable= False),
+tp.StructField(name= 'foot',   					dataType= tp.StringType(),   nullable= False),
+tp.StructField(name= 'role',   					dataType= tp.StringType(),   nullable= False),
+tp.StructField(name= 'height',   				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'passportArea',   			dataType= tp.StringType(),   nullable= False),
+tp.StructField(name= 'weight',   				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'Id', 						dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'numFouls', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'numGoals', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'numOwnGoals', 			dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'passAcc', 				dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'percentShotsOnTarget', 	dataType= tp.IntegerType(),  nullable= False),
 ])
 
 # Teams Schema
 Teams_schema = tp.StructType([
-tp.StructField(name= 'name', 			dataType= tp.StringType(),  nullable= False),
-tp.StructField(name= 'Id', 				dataType= tp.IntegerType(),  nullable= False)
+tp.StructField(name= 'name', 	dataType= tp.StringType(),  nullable= False),
+tp.StructField(name= 'Id', 		dataType= tp.IntegerType(),  nullable= False)
 ])
 
 # Load the Players and Teams data from CSV file
