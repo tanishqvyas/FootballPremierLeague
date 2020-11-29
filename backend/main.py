@@ -48,27 +48,12 @@ tp.StructField(name= 'Id', 				dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numFouls', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numGoals', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'numOwnGoals', 	dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passAcc', 		dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'passAcc', 		dataType= tp.FloatType(),  nullable= False),
 tp.StructField(name= 'normalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'rating', 		dataType= tp.IntegerType(),  nullable= False)
-tp.StructField(name= 'name',   					dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'birthArea',   			dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'birthDate',   			dataType= tp.TimestampType(),   nullable= False),
-tp.StructField(name= 'foot',   					dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'role',   					dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'height',   				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'passportArea',   			dataType= tp.StringType(),   nullable= False),
-tp.StructField(name= 'weight',   				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'Id', 						dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'fouls', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'goals', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'own_goals', 			dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'percent_pass_accuracy', 				dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'percent_shots_on_target', 	dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'retirement_status', 	dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False)
 ])
 
 
@@ -92,6 +77,7 @@ cols=['Id','normalPasses', 'keyPasses','accNormalPasses', 'accKeyPasses','passAc
 df = sql.sql("select Id from Player").collect()
 a=[]
 for i in df:
+	Players_RDD=Players_RDD.withColumn("rating",F.when(F.col("Id")==i[0],0.5).otherwise(F.col("rating")))
 	a.append((i[0],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
 Metrics_RDD=ssc.createDataFrame(a, cols)
 sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
