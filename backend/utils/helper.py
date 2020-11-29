@@ -55,4 +55,4 @@ def get_chances_of_winning(strength_of_A, strength_of_B):
 
 	chance_of_B_winning = 100 - chance_of_A_winning
 
-	return [chance_of_A_winning, chance_of_B_winning]
+	return chance_of_A_winning, chance_of_B_winning

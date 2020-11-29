@@ -50,7 +50,9 @@ tp.StructField(name= 'goals', 				dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'own_goals', 			dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'percent_pass_accuracy', 				dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'percent_shots_on_target', 	dataType= tp.IntegerType(),  nullable= False),
+tp.StructField(name= 'retirement_status', 	dataType= tp.IntegerType(),  nullable= False),
 ])
+
 
 # Teams Schema
 Teams_schema = tp.StructType([
