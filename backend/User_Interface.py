@@ -35,13 +35,13 @@ def handle_request_one(request):
 
 
 # Function to handle request 2
-def handle_request_two(request):
+def handle_request_two(request, Metrics_RDD, Player_RDD):
     
     # Invalid request handler variables
     msg = "Invalid Request"
     valid_request = True
 
-    # Initializing the response dict
+    #--------------------------Initializing the response dict-------------------------
     response = dict()
 
     fields_list = ["name", "birthArea", "birthDate", "foot", "role", "height", "passportArea", "weight", "fouls", "goals", "own_goals", "percent_pass_accuracy", "percent_shots_on_target"]
@@ -49,11 +49,39 @@ def handle_request_two(request):
         response[field] = "sample data"
 
 
-    # Process the request
+    #--------------------------Process the request------------------------------------
+    requested_player_name = request["name"]
+    matching_player_row = Player_RDD.filter(Player_RDD.name == requested_player_name).collect()
+
+    print("\n\n########################################################")
+    print(matching_player_row)
+    print(type(matching_player_row))
+    print("########################################################\n\n")
+
+    if(len(matching_player_row) == 0):
+        msg = "Player Not Found"
+        valid_request = False
+
+    else:
+        # Converting RDD to json
+        response["name"] = matching_player_row[0][0]
+        response["birthArea"] = matching_player_row[0][1]
+
+        response["birthDate"] = str(matching_player_row[0][2].year) + "-" + str(matching_player_row[0][2].month) + "-" + str(matching_player_row[0][2].day)
+        
+        response["foot"] = matching_player_row[0][3]
+        response["role"] = matching_player_row[0][4]
+        response["height"] = matching_player_row[0][5]
+        response["passportArea"] = matching_player_row[0][6]
+        response["weight"] = matching_player_row[0][7]
+        response["fouls"] = matching_player_row[0][9]
+        response["goals"] = matching_player_row[0][10]
+        response["own_goals"] = matching_player_row[0][11]
+        response["percent_pass_accuracy"] = matching_player_row[0][12]
+        response["percent_shots_on_target"] = matching_player_row[0][13]
 
 
-
-    # Returning the response
+    #-----------------------------Returning the response----------------------------------
     if valid_request:
         return response
     else:
@@ -99,13 +127,13 @@ def handle_request_three(request):
 
 
 # Request Handler
-def request_handler(req_type, request):
+def request_handler(req_type, request, Metrics_RDD, Player_RDD):
     
     if(req_type == 1):
         return handle_request_one(request)
     
     elif (req_type == 2):
-        return handle_request_two(request)
+        return handle_request_two(request, Metrics_RDD, Player_RDD)
     
     elif (req_type == 3):
         return handle_request_three(request)
@@ -118,7 +146,8 @@ def request_handler(req_type, request):
 
 
 # User Interface Handler
-def start_user_service():
+def start_user_service(Metrics_RDD, Player_RDD):
+
 
     # File paths for Request and Reponse Files
     request_file_path = os.path.join("request_response_data", "request.txt")
@@ -149,7 +178,7 @@ def start_user_service():
 
         # --------------------- Processing Response ------------------------------
         # Process the request
-        test_response = request_handler(request["req_type"], request)
+        test_response = request_handler(request["req_type"], request, Metrics_RDD, Player_RDD)
 
 
         # --------------------- Writing Response ---------------------------------
