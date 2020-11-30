@@ -55,7 +55,6 @@ tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False
 tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False),
-tp.StructField(name= 'previousRating', 		dataType= tp.FloatType(),  nullable= False),
 tp.StructField(name= 'numMatches', 		dataType= tp.IntegerType(),  nullable= False)
 ])
 
@@ -96,18 +95,22 @@ sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
 #Creating matches dataframe
 b=[]
 match_cols=["status","label","duration","winner","venue","gameweek","teamsData"]
-#b.append(("","","",0,"",0,""))
 first=1
 
 
 
-'''
-
 #Creating and Initializing player chemistry
-player_ids=(Player_RDD.select('Id')).collect()
+player_ids=sorted([i[0] for i in (Player_RDD.select('Id')).collect()])
 columns=['player1','player2','chemistry']
 
-player_chemistry = ssc.createDataFrame([player_ids[0][0], player_ids[1][0], 0.5], columns)
+#player_chemistry = ssc.createDataFrame([[player_ids[0], player_ids[1], 0.5]], columns)
+rows=[]
+for i in range(len(player_ids)):
+	for j in range(i+1,len(player_ids)):
+		rows.append([player_ids[i],player_ids[j], 0.5])
+player_chemistry = ssc.createDataFrame(rows,columns)
+#player_chemistry = player_chemistry.union(newRow)
+'''
 for j in range(i+2,len(player_ids)):
 	newRow = ssc.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
 	player_chemistry = player_chemistry.union(newRow)
@@ -116,24 +119,38 @@ for i in range(1,len(player_ids)):
 	for j in range(i+1,len(player_ids)):
 		newRow = ssc.createDataFrame([player_ids[i][0],player_ids[j][0], 0.5],columns)
 	player_chemistry = player_chemistry.union(newRow)
-
+'''
 
 
 
 #Same teams chemistry:
 def same_team_chem(player1,player2):
 	global player_chemistry
+	global Player_RDD
+	prev1=Player_RDD.filter(Player_RDD.Id==player1).select("previousRating").collect()[0][0]
+	prev2=Player_RDD.filter(Player_RDD.Id==player2).select("previousRating").collect()[0][0]
+	r1=Player_RDD.filter(Player_RDD.Id==player1).select("rating").collect()[0][0]
+	r2=Player_RDD.filter(Player_RDD.Id==player2).select("rating").collect()[0][0]
+	'''
 	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
 	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
 	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
 	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
-
+	'''
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
 		sign=1
 	else:
 		sign=-1
-
+	
+	if player1>player2:
+		player1,player2=player2,player1
+	df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
+	df1 = df1.filter(df1.player2.contains(player1))
+	row=df1.collect()
+	to_insert=row[2]+(sign*change)
+	player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2 & F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
+	'''
 	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
 	df1 = df1.filter(df1.player2.contains(player2))
 
@@ -148,20 +165,35 @@ def same_team_chem(player1,player2):
 		to_insert=df1[2]+(sign*change)
 		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
 
-
+	'''
 def opposite_team_chem(player1,player2):
 	global player_chemistry
+	global Player_RDD
+	prev1=Player_RDD.filter(Player_RDD.Id==player1).select("previousRating").collect()[0][0]
+	prev2=Player_RDD.filter(Player_RDD.Id==player2).select("previousRating").collect()[0][0]
+	r1=Player_RDD.filter(Player_RDD.Id==player1).select("rating").collect()[0][0]
+	r2=Player_RDD.filter(Player_RDD.Id==player2).select("rating").collect()[0][0]
+	'''
 	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
 	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
 	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
 	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
-
+	'''
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
 		sign=-1
 	else:
 		sign=1
-
+	
+	if player1>player2:
+		player1,player2=player2,player1
+	df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
+	df1 = df1.filter(df1.player2.contains(player1))
+	row=df1.collect()
+	to_insert=row[2]+(sign*change)
+	player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2 & F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
+	
+	'''
 	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
 	df1 = df1.filter(df1.player2.contains(player2))
 
@@ -175,7 +207,7 @@ def opposite_team_chem(player1,player2):
 		row=df1.collect()
 		to_insert=df1[2]+(sign*change)
 		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
-'''	
+	'''
 def calc_contrib_and_rating(i,stored):
 	global Player_RDD
 	global Metrics_RDD
@@ -210,30 +242,30 @@ def calc_contrib_and_rating(i,stored):
 		values=df2.collect()[0]
 		contrib=1.05*get_player_contribution(values[5], values[9],values[13],values[17])
 		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,contrib).otherwise(F.col("contribution")))
-		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
-		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
+		
+		foul,own_goal,prev_rating,numMatches=Player_RDD.filter(Player_RDD.Id==j).select("numFouls","ownGoals","rating","numMatches").collect()[0]
 		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(numMatches+1)).otherwise(F.col("numMatches")))
 		
-		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
-		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
-		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
-		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
-		
+		if (numMatches+1)>=5:
+			Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
+		else:
+			print("CLUSTERING AND AVERAGING")
 	
 	for j in playedtime:
 		df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
 		values=df2.collect()[0]
 		contrib=j[1]*get_player_contribution(values[5], values[9],values[13],values[17])
 		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j[0],contrib).otherwise(F.col("contribution")))
-		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
-		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
-		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
 		
-		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
-		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
-		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
-		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
-		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
+		foul,own_goal,prev_rating,numMatches=Player_RDD.filter(Player_RDD.Id==j).select("numFouls","ownGoals","rating","numMatches").collect()[0]
+		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(numMatches+1)).otherwise(F.col("numMatches")))
+		
+		if (numMatches+1)>=5:
+			Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
+		else:
+			print("CLUSTERING AND AVERAGING")
 	return bench,lineup,substitutions
 
 
@@ -246,16 +278,14 @@ def insert_into_matches(stored):
 	global sql
 	
 	if first==1:
-		#match_cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
-		Matches_RDD=ssc.createDataFrame([stored])#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		Matches_RDD=ssc.createDataFrame([stored])
 		sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 		first=0
 	else:
-		#newRow=stored.select("status","label","duration","winner","venue","gameweek","teamsData")
-		newRow=ssc.createDataFrame([stored])#.collect()#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		newRow=ssc.createDataFrame([stored])
 		Matches_RDD= Matches_RDD.union(newRow)
-	print(Matches_RDD.collect())
-'''
+	print("MATCH INFO ",Matches_RDD.collect())
+	'''
 		if stored['winner']==0:
 			winner=None
 		else:
@@ -280,7 +310,7 @@ def insert_into_matches(stored):
 							if j['redCards']!="0":
 								red_cards.append(player_name)
 
-'''
+	'''
 '''
 #TRIAL
 player=65880
@@ -303,7 +333,7 @@ def calc_metrics(rdd):
 		
 		if 'eventId' in data:
 			player=data['playerId']
-			'''			
+						
 			df2=Player_RDD.filter(Player_RDD.Id == player)
 			if df2.collect():
 				values=df2.collect()[0]
@@ -470,14 +500,14 @@ def calc_metrics(rdd):
 					permatch_own_goals=metrics_values[20]
 					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(permatch_own_goals+1)).otherwise(F.col("ownGoals")))
 					
-				'''	
+				
 				#checking Metrics per match and player profiles updated	
-				#df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
-				#print(df2.collect()[0])
-				#'''
+				df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
+				print("UPDATED METRICS FOR THE PLAYER FOR THE EVENT", df2.collect()[0])
+				#
 				#df2=Player_RDD.filter(Player_RDD.Id == player)
 				#print(df2.collect()[0])
-				#'''
+				#
 		else:
 			
 			#its match data dict
