@@ -55,6 +55,7 @@ tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False
 tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False)
+tp.StructField(name= 'previousRating', 		dataType= tp.FloatType(),  nullable= False)
 ])
 
 
@@ -71,9 +72,11 @@ Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
 sql.registerDataFrameAsTable(Players_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")
 
+# initializing player metrics
 for i in ['numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses']:
 	Player_RDD=Player_RDD.withColumn(i,lit(0))
 Player_RDD=Player_RDD.withColumn("rating",lit(0.5))
+Player_RDD=Player_RDD.withColumn("previousRating",lit(0.5))
 
 print(Player_RDD.show(5))
 
@@ -88,20 +91,146 @@ sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
 
 
 #Creating matches dataframe
-
 b=[]
-cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']#NEED TO STORE ALL MATCH DETAILS ALSO
-b.append((0,0,0,0,0,0,0,0,0))
+match_cols=['status','date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
+b.append(('','','','',0,'',0,0,0,0))
 Matches_RDD=ssc.createDataFrame(b, cols)
 sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 
-# b=[]
-# cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']#NEED TO STORE ALL MATCH DETAILS ALSO
-# b.append((None,None,None,None,None,None,None,None,None))
-# Matches_RDD=ssc.createDataFrame(b, cols)
-# sql.registerDataFrameAsTable(Matches_RDD, "Matches")
+#Creating and Initializing player chemistry
+player_ids=(Player_RDD.select('Id')).collect()
+columns=['player1','player2','chemistry']
+
+player_chemistry = spark.createDataFrame([player_ids[0][0], player_ids[1][0], 0.5], columns)
+for j in range(i+2,len(player_ids)):
+	newRow = spark.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
+	player_chemistry = player_chemistry.union(newRow)
+	
+for i in range(1,len(player_ids)):
+	for j in range(i+1,len(player_ids)):
+		newRow = spark.createDataFrame([player_ids[i][0],player_ids[j][0], 0.5],columns)
+	player_chemistry = player_chemistry.union(newRow)
 
 
+#Same teams chemistry:
+def same_team_chem(player1,player2):
+	global player_chemistry
+	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1)
+	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2)
+	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1)
+	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2)
+
+	change=abs(((r1-prev1)+(r2-prev2))/2)
+	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
+		sign=1
+	else:
+		sign=-1
+
+	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
+	df1 = df1.filter(df1.player2.contains(player2))
+
+	if(df1==None):
+		df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
+		df1 = df1.filter(df1.player2.contains(player1))
+		row=df1.collect()
+		to_insert=df1[2]+(sign*change)
+		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2,F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
+	else:
+		row=df1.collect()
+		to_insert=df1[2]+(sign*change)
+		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
+
+
+def opposite_team_chem(player1,player2):
+	global player_chemistry
+	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1)
+	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2)
+	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1)
+	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2)
+
+	change=abs(((r1-prev1)+(r2-prev2))/2)
+	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
+		sign=-1
+	else:
+		sign=1
+
+	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
+	df1 = df1.filter(df1.player2.contains(player2))
+
+	if(df1==None):
+		df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
+		df1 = df1.filter(df1.player2.contains(player1))
+		row=df1.collect()
+		to_insert=df1[2]+(sign*change)
+		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2,F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
+	else:
+		row=df1.collect()
+		to_insert=df1[2]+(sign*change)
+		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
+	
+def calc_contrib_and_rating(i,stored):
+	global Player_RDD
+	global Metrics_RDD
+	bench=[i['playerId'] for i in stored['teamsData'][i]['formation']['bench']]
+	lineup=[i['playerId'] for i in stored['teamsData'][i]['formation']['lineup']]
+	substitutions=stored['teamsData'][i]['formation']['substitutions']
+	playedtime=[]
+	for j in substitutions:	# FIND OUT IF THERE ARE ONLY 3 SUBS PER MATCH FROM SIR
+		inplayer=j['playerIn']
+		outplayer=j['playerOut']
+		minute=j['minute']
+		
+		if inplayer in bench:#cuz in player cant be in lineup
+			#INSERT A METRIC AS TIME PLAYED
+			playedtime.append((inplayer,(90-minute)/90.0))
+			bench.remove(inplayer)
+		if outplayer in lineup:
+			playedtime.append((outplayer,(minute)/90.0))
+			outplayer.remove(outplayer)
+			continue
+		for k in len(playedtime):
+			if playedtime[k][0]==outplayer:
+				playedtime[k][1]=(playedtime[k][1]*90.0)-90+minute
+				break
+
+	for j in bench:
+		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,0).otherwise(F.col("contribution")))
+		#df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
+		#print(df2.collect()[0])
+	for j in lineup:
+		df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
+		values=df2.collect()[0]
+		contrib=1.05*get_player_contribution(values[5], values[9],values[13],values[17])
+		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,contrib).otherwise(F.col("contribution")))
+		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
+		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
+		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
+		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
+		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
+	
+	for j in playedtime:
+		df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
+		values=df2.collect()[0]
+		contrib=j[1]*get_player_contribution(values[5], values[9],values[13],values[17])
+		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j[0],contrib).otherwise(F.col("contribution")))
+		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
+		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
+		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
+		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
+		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
+	return bench,lineup,substitutions
+
+
+def insert_into_matches(stored):
+	global match_cols
+	global Matches_RDD
+	#match_cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
+	for i in stored["teamsData"]:
+	
+	newRow = spark.createDataFrame([stored['status'],stored['date'],stored['label'],stored['duration'],stored['winner'],stored['venue'],stored['']],match_cols)
+	Matches_RDD= Matches_RDD.union(newRow)
 '''
 #TRIAL
 player=65880
@@ -109,8 +238,6 @@ df2 =Metrics_RDD.filter(Metrics_RDD.Id == player)
 print(df2.collect()[0][0])
 Metrics_RDD=Metrics_RDD.withColumn("Id",F.when(F.col("Id")==player,1000).otherwise(F.col("Id")))
 print(Metrics_RDD.show(5))
-
-
 Function to process the match and event Jsons
 '''
 def calc_metrics(rdd):
@@ -304,68 +431,59 @@ def calc_metrics(rdd):
 			#its match data dict
 			print("match data")
 			#INSERT INTO Matches_RDD
-			#
-			#
-			#
 			
+			
+			#calculating previous match data after the events
 			if stored and stored['status']=='Played':
 				#match is over # OR IS THERE SOME OTHER VALUE
+				ids=[]
+				count=1
+				bench1=[]
+				bench2=[]
+				lineup1=[]
+				lineup2=[]
+				substitutions1=[]
+				substitutions2=[]
 				
-				for i in stored['teamsData']:
+				for i in stored['teamsData'] and count<=2:
 					#i is the teamID
+					ids.append(i)
 					if stored['teamsData'][i]['hasformation']==1:
-						bench=[i['playerId'] for i in stored['teamsData'][i]['formation']['bench']]
-						lineup=[i['playerId'] for i in stored['teamsData'][i]['formation']['lineup']]
-						substitutions=stored['teamsData'][i]['formation']['substitutions']
-						playedtime=[]
-						for j in substitutions:	# FIND OUT IF THERE ARE ONLY 3 SUBS PER MATCH FROM SIR
-							inplayer=j['playerIn']
-							outplayer=j['playerOut']
-							minute=j['minute']
-							
-							if inplayer in bench:#cuz in player cant be in lineup
-								#INSERT A METRIC AS TIME PLAYED
-								playedtime.append((inplayer,(90-minute)/90.0))
-								bench.remove(inplayer)
-							if outplayer in lineup:
-								playedtime.append((outplayer,(minute)/90.0))
-								outplayer.remove(outplayer)
-								continue
-							for k in len(playedtime):
-								if playedtime[k][0]==outplayer:
-									playedtime[k][1]=(playedtime[k][1]*90.0)-90+minute
-									break
+						if c==1:
+							bench1,lineup1,substitutions1=calc_contrib_and_rating(i,stored)
+						if c==2:
+							bench2,lineup2,substitutions2=calc_contrib_and_rating(i,stored)
+						count+=1
+					if c==3:
+
+						# Calculating ratings after reading both the players
+						substitutions1=[i['playerIn'] for i in substitutions1]
+						substitutions2=[i['playerIn'] for i in substitutions2]
+						for i in lineup1+substitutions1:
+							for j in lineup2+substitutions2:
+								opposite_team_chem(i,j)
+							for k in lineup1+substitutions2:
+								if(i!=k):
+									same_team_chem(i,k)
 						
-						players_who_played=[]
-						for j in bench:
-							Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,0).otherwise(F.col("contribution")))
-							df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
-							print(df2.collect()[0])
-						for j in lineup:
-							df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
-							values=df2.collect()[0]
-							Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j,(1.05*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("contribution")))
-							df2=Metrics_RDD.filter(Metrics_RDD.Id == j)
-							print(df2.collect()[0])
-						for j in playedtime:
-							df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
-							values=df2.collect()[0]
-							Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j[0],(j[1]*get_player_contribution(values[5], values[9],values[13],values[17]))).otherwise(F.col("contribution")))
-							df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
-							print(df2.collect()[0])
+						for i in lineup2+substitutions2:
+							for k in lineup2+substitutions2:
+								if(i!=k):
+									same_team_chem(i,k)
+
+
+
+			# new match data
 			stored=data
+			
+			insert_into_matches(stored)
+			
 			if stored['status']!='Played':
 				break
 			#initializing the values of all the metrics
 			global metric_cols
 			for i in metric_cols[1:]:
 				Metrics_RDD=Metrics_RDD.withColumn(i,lit(0))
-			
-	#NO CALCULATIONS FOR MATCHES OTHER THAN PLAYED		
-	
-				
-
-			#MUST CALCULATE RATINGS
 
 
 # Runnning the User CLI as a separate Thread
@@ -392,4 +510,3 @@ lines.foreachRDD(calc_metrics)
 strc.start()
 strc.awaitTermination()  
 strc.stop(stopSparkContext=False, stopGraceFully=True)
-
