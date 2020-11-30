@@ -1,2 +1,4 @@
+{"req_type": 2, "name": "Paul Pogba"}
+{"req_type": 2, "name": "Harry Potter"}
 {"req_type": 3, "date": "2017-12-13", "label": "Southampton - Leicester City, 1 - 4"}
-{"req_type": 3, "date": "2020-09-3", "label": "Lazio - Internationale, 2 - 3"}
+{"req_type": 3, "date": "2020-09-03", "label": "Lazio - Internationale, 2 - 3"}
