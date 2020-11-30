@@ -309,7 +309,7 @@ def calc_metrics(rdd):
 		
 		if 'eventId' in data:
 			player=data['playerId']
-						
+			'''			
 			df2=Player_RDD.filter(Player_RDD.Id == player)
 			if df2.collect():
 				values=df2.collect()[0]
@@ -484,6 +484,7 @@ def calc_metrics(rdd):
 				#df2=Player_RDD.filter(Player_RDD.Id == player)
 				#print(df2.collect()[0])
 				#
+				'''
 		else:
 			
 			#its match data dict
