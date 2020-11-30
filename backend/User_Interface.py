@@ -268,9 +268,3 @@ def start_user_service(Metrics_RDD, Player_RDD):
     request_file.close()
     response_file.close()
 
-
-
-if __name__ == "__main__":
-
-    # Start the CLI for user
-    start_user_service()
