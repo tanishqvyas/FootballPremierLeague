@@ -68,6 +68,7 @@ tp.StructField(name= 'Id', 		dataType= tp.IntegerType(),  nullable= False)
 # Load the Players and Teams data from CSV file
 Player_RDD = ssc.read.csv(Player_CSV_Path, schema=Players_schema, header=True)
 Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
+Matches_RDD = []
 
 sql.registerDataFrameAsTable(Player_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")

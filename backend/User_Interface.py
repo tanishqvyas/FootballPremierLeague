@@ -289,6 +289,7 @@ def request_handler(req_type, request, Metrics_RDD, Player_RDD, Matches_RDD, Tea
 # User Interface Handler
 def start_user_service(Metrics_RDD, Player_RDD, Matches_RDD, Teams_RDD, player_chemistry):
 
+    time.sleep(10)
 
     # File paths for Request and Reponse Files
     request_file_path = os.path.join("request_response_data", "request.txt")
@@ -305,7 +306,9 @@ def start_user_service(Metrics_RDD, Player_RDD, Matches_RDD, Teams_RDD, player_c
         # --------------------- Reading Response ---------------------------------
         # Get the Json request from the file
         request = request_file.readline()
+        print("\n\n\n#####################################################################")
         print("Sending : ", request)
+        print("#####################################################################\n\n\n")
 
         # If not line : EOF
         if not request:
@@ -325,6 +328,10 @@ def start_user_service(Metrics_RDD, Player_RDD, Matches_RDD, Teams_RDD, player_c
         # Converting the response dict to Json format str to write to file
         test_response = json.dumps(test_response)
         test_response = str(test_response)
+
+        print("\n\n\n#####################################################################")
+        print("RESPONSE : ", test_response)
+        print("#####################################################################\n\n\n")
 
         # Write the response to the response file
         response_file.write(test_response)

@@ -112,15 +112,17 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 
 			# Calculate player strengths
 			if(teamA_player1_ID < teamA_player2_ID):
-				
-				teamA_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamA_player1_ID & player_chemistry.player2 == teamA_player2_ID)).collect()[0][2]
-				teamB_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamB_player1_ID & player_chemistry.player2 == teamB_player2_ID)).collect()[0][2]
+				teamA_player_coeff.append(player_chemistry.filter((player_chemistry.player1 == teamA_player1_ID) & (player_chemistry.player2 == teamA_player2_ID)).collect()[0][2])
 
 			else:
-
-				teamA_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamA_player2_ID & player_chemistry.player2 == teamA_player1_ID)).collect()[0][2]
-				teamB_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamB_player2_ID & player_chemistry.player2 == teamB_player1_ID)).collect()[0][2]
+				teamA_player_coeff.append(player_chemistry.filter((player_chemistry.player1 == teamA_player2_ID) & (player_chemistry.player2 == teamA_player1_ID)).collect()[0][2])
 		
+			# For player B
+			if(teamB_player1_ID < teamB_player2_ID):
+				teamB_player_coeff.append(player_chemistry.filter((player_chemistry.player1 == teamB_player1_ID) & (player_chemistry.player2 == teamB_player2_ID)).collect()[0][2])
+			else:
+
+				teamB_player_coeff.append(player_chemistry.filter((player_chemistry.player1 == teamB_player2_ID) & (player_chemistry.player2 == teamB_player1_ID)).collect()[0][2])
 
 		
 
