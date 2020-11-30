@@ -98,6 +98,13 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 
 			teamB_player1_name = request["team2"]["player" + str(player1)]
 			teamB_player2_name = request["team2"]["player" + str(player2)]
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+			print("-------------------Hermione-", player1 , player2,"----------------------------")
+
 
 			try:
 				# Get Player IDs
@@ -108,6 +115,7 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 				teamB_player2_ID = Player_RDD.filter(Player_RDD.name == teamB_player2_name).select("Id").collect()[0][0]
 
 			except:
+				print("Invalid Players")
 				return None, None
 
 			# Calculate player strengths
@@ -132,8 +140,22 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 
 		player_strength_teamA.append(teamA_player_strength)
 		player_strength_teamB.append(teamB_player_strength)
-	
 
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+		print("-------------------HARRY---------", player1 ,"--------------------")
+
+
+	print("-------------------RONALD-----------------------------")
+	print("-------------------RONALD-----------------------------")
+	print("-------------------RONALD-----------------------------")
+	print("-------------------RONALD-----------------------------")
+	print("-------------------RONALD-----------------------------")
+	print("-------------------RONALD-----------------------------")
 	# Get Team Strengths
 	strength_of_A = get_team_strength(player_strength_teamA)
 	strength_of_B = get_team_strength(player_strength_teamB)
