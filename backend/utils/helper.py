@@ -80,4 +80,4 @@ def get_team_strength():
 # Function to calculate Strengths of two teams
 def get_strengths_of_two_teams():
 
-	pass
+	pass 
