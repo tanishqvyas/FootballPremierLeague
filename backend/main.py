@@ -243,15 +243,16 @@ def insert_into_matches(stored):
 	global Teams_RDD
 	global ssc
 	global first
+	global sql
 	
 	if first==1:
 		#match_cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
-		Matches_RDD=ssc.createDataFrame(stored)#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		Matches_RDD=ssc.createDataFrame([stored])#.select("status","label","duration","winner","venue","gameweek","teamsData")
 		sql.registerDataFrameAsTable(Matches_RDD, "Matches")
 		first=0
 	else:
 		#newRow=stored.select("status","label","duration","winner","venue","gameweek","teamsData")
-		newRow=ssc.createDataFrame(stored)#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		newRow=ssc.createDataFrame([stored])#.collect()#.select("status","label","duration","winner","venue","gameweek","teamsData")
 		Matches_RDD= Matches_RDD.union(newRow)
 	print(Matches_RDD.collect())
 '''
@@ -279,7 +280,7 @@ def insert_into_matches(stored):
 							if j['redCards']!="0":
 								red_cards.append(player_name)
 
-		'''
+'''
 '''
 #TRIAL
 player=65880
@@ -298,7 +299,7 @@ def calc_metrics(rdd):
 	rdds=[json.loads(i) for i in rdd.collect()]
 	stored=[]
 	for data in rdds:
-		print(data)
+		#print(data)
 		
 		if 'eventId' in data:
 			player=data['playerId']
@@ -538,8 +539,8 @@ def calc_metrics(rdd):
 
 
 # Runnning the User CLI as a separate Thread
-thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
-thread.start()
+#thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
+#thread.start()
 
 
 # Read the streamed data
