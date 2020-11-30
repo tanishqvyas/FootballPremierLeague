@@ -56,3 +56,15 @@ def get_chances_of_winning(strength_of_A, strength_of_B):
 	chance_of_B_winning = 100 - chance_of_A_winning
 
 	return chance_of_A_winning, chance_of_B_winning
+
+
+# Function to Calculate Player Strengths
+def get_player_strength(player_rating, list_of_coefficients):
+
+	return player_rating * ( sum(list_of_coefficients) / len(list_of_coefficients))
+
+
+# Function to calculate Team Strength
+def get_team_strength():
+
+	pass
