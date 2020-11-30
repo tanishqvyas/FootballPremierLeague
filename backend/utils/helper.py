@@ -66,5 +66,7 @@ def get_player_strength(player_rating, list_of_coefficients):
 
 # Function to calculate Team Strength
 def get_team_strength():
+	
 
 	pass
+

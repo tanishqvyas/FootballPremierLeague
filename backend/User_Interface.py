@@ -185,6 +185,7 @@ def handle_request_three(request, Metrics_RDD, Player_RDD):
 
 
     # Process the request
+    response["date"] = request["date"]
 
 
 
