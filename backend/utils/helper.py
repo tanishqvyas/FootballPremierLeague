@@ -67,4 +67,17 @@ def get_player_strength(player_rating, list_of_coefficients):
 # Function to calculate Team Strength
 def get_team_strength():
 
+	cur_strength = 0
+
+	# Find average of all team players
+	for player in range(11):
+		pass
+
+		# cur_strength += get_player_strength(player)
+
+	return cur_strength / 11
+
+# Function to calculate Strengths of two teams
+def get_strengths_of_two_teams():
+
 	pass

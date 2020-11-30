@@ -169,7 +169,7 @@ def handle_request_three(request, Metrics_RDD, Player_RDD):
     msg = "Invalid Request"
     valid_request = True
 
-    # Initializing the response dict
+    #--------------------------Initializing the response dict-------------------------
     response = dict()
     response["yellow_cards"] = []
     response["red_cards"] = []
@@ -184,11 +184,12 @@ def handle_request_three(request, Metrics_RDD, Player_RDD):
     response["own_goals"] = []
 
 
-    # Process the request
+    #--------------------------Process the request------------------------------------
+    response["date"] = request["date"]
 
 
 
-    # Returning the response
+    #-----------------------------Returning the response----------------------------------
     if valid_request:
         return response
     else:
@@ -245,7 +246,6 @@ def start_user_service(Metrics_RDD, Player_RDD):
 
         # converting request json to dict
         request = json.loads(request)
-
 
 
         # --------------------- Processing Response ------------------------------
