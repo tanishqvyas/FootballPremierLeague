@@ -100,9 +100,15 @@ def handle_request_one(request, Metrics_RDD, Player_RDD, player_chemistry):
         valid_request = False
         msg = "Player Does Not Exist"
 
-    # Fetch Winning Chances for Teams
-    response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
-    
+    if(valid_request and strength_of_team1 != None and strength_of_team2 != None):
+        print("---------------gullu-----------------------")
+        print(strength_of_team1, strength_of_team2)
+        print("---------------gullu-----------------------")
+        # Fetch Winning Chances for Teams
+        response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
+    else:
+        valid_request = False
+        msg = "Invalid Request"
 
     #-----------------------------Returning the response----------------------------------
     if valid_request:

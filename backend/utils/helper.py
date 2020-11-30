@@ -50,6 +50,9 @@ def get_player_rating(player_performance, existing_player_rating):
 
 # Function to get the Chances of Winning for A and B
 def get_chances_of_winning(strength_of_A, strength_of_B):
+	print("-----------------------------Beli chi NAAGin nikal-------------------------------")
+	print(strength_of_A, strength_of_B)
+	print("----------------------------------Munna vadora ya lagla--------------------------")
 
 	chance_of_A_winning = ((0.5 + strength_of_A) - ( (strength_of_A + strength_of_B)/2 ))*100
 
@@ -83,8 +86,22 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 		teamA_player_coeff = []
 		teamB_player_coeff = []
 
-		teamA_player_rating = Player_RDD.filter(Player_RDD.name == request["team1"]["player" + str(player1)]).select("rating").collect()[0][0]
-		teamB_player_rating = Player_RDD.filter(Player_RDD.name == request["team2"]["player" + str(player1)]).select("rating").collect()[0][0]
+		teamA_player_rating = Player_RDD.filter(Player_RDD.name == request["team1"]["player" + str(player1)]).select("rating").collect()
+		if(len(teamA_player_rating) == 0):
+			print("Player ", player1, "of team1 does not exist")
+			return None, None
+		else:
+			teamA_player_rating = teamA_player_rating[0][0]
+
+		teamB_player_rating = Player_RDD.filter(Player_RDD.name == request["team2"]["player" + str(player1)]).select("rating").collect()
+		
+		if(len(teamB_player_rating) == 0):
+			print("Player ", player1, "of team2 does not exist")
+			return None, None
+			
+		else:
+			teamB_player_rating = teamB_player_rating[0][0]
+
 
 		for player2 in range(1, 12):
 
