@@ -1,4 +1,5 @@
 from socket import *
+from utils.helper import *
 import sys
 import json
 import time
@@ -97,7 +98,7 @@ def handle_request_one(request, Metrics_RDD, Player_RDD):
     # strength_of_team1, strength_of_team2 = 
 
     # Fetch Winning Chances for Teams
-    # response["team1"]["winning chance"], response["team2"]["winning chance"] = 
+    # response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
     
 
     #-----------------------------Returning the response----------------------------------
@@ -268,9 +269,3 @@ def start_user_service(Metrics_RDD, Player_RDD):
     request_file.close()
     response_file.close()
 
-
-
-if __name__ == "__main__":
-
-    # Start the CLI for user
-    start_user_service()
