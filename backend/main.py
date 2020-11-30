@@ -54,8 +54,9 @@ tp.StructField(name= 'normalPasses', 		dataType= tp.IntegerType(),  nullable= Fa
 tp.StructField(name= 'keyPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accNormalPasses', 		dataType= tp.IntegerType(),  nullable= False),
 tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= False),
-tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False)
-tp.StructField(name= 'previousRating', 		dataType= tp.FloatType(),  nullable= False)
+tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False),
+tp.StructField(name= 'previousRating', 		dataType= tp.FloatType(),  nullable= False),
+tp.StructField(name= 'numMatches', 		dataType= tp.IntegerType(),  nullable= False)
 ])
 
 
@@ -69,11 +70,13 @@ tp.StructField(name= 'Id', 		dataType= tp.IntegerType(),  nullable= False)
 Player_RDD = ssc.read.csv(Player_CSV_Path, schema=Players_schema, header=True)
 Teams_RDD = ssc.read.csv(Teams_CSV_Path, schema=Teams_schema, header=True)
 
-sql.registerDataFrameAsTable(Players_RDD, "Player")
+sql.registerDataFrameAsTable(Player_RDD, "Player")
 sql.registerDataFrameAsTable(Teams_RDD, "Teams")
 
+
+
 # initializing player metrics
-for i in ['numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses']:
+for i in ['numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses','numMatches']:
 	Player_RDD=Player_RDD.withColumn(i,lit(0))
 Player_RDD=Player_RDD.withColumn("rating",lit(0.5))
 Player_RDD=Player_RDD.withColumn("previousRating",lit(0.5))
@@ -92,33 +95,38 @@ sql.registerDataFrameAsTable(Metrics_RDD, "Metrics")
 
 #Creating matches dataframe
 b=[]
-match_cols=['status','date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
-b.append(('','','','',0,'',0,0,0,0))
-Matches_RDD=ssc.createDataFrame(b, cols)
-sql.registerDataFrameAsTable(Matches_RDD, "Matches")
+match_cols=["status","label","duration","winner","venue","gameweek","teamsData"]
+#b.append(("","","",0,"",0,""))
+first=1
+
+
+
+'''
 
 #Creating and Initializing player chemistry
 player_ids=(Player_RDD.select('Id')).collect()
 columns=['player1','player2','chemistry']
 
-player_chemistry = spark.createDataFrame([player_ids[0][0], player_ids[1][0], 0.5], columns)
+player_chemistry = ssc.createDataFrame([player_ids[0][0], player_ids[1][0], 0.5], columns)
 for j in range(i+2,len(player_ids)):
-	newRow = spark.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
+	newRow = ssc.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
 	player_chemistry = player_chemistry.union(newRow)
 	
 for i in range(1,len(player_ids)):
 	for j in range(i+1,len(player_ids)):
-		newRow = spark.createDataFrame([player_ids[i][0],player_ids[j][0], 0.5],columns)
+		newRow = ssc.createDataFrame([player_ids[i][0],player_ids[j][0], 0.5],columns)
 	player_chemistry = player_chemistry.union(newRow)
+
+
 
 
 #Same teams chemistry:
 def same_team_chem(player1,player2):
 	global player_chemistry
-	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1)
-	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2)
-	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1)
-	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2)
+	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
+	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
+	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
+	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
 
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
@@ -143,10 +151,10 @@ def same_team_chem(player1,player2):
 
 def opposite_team_chem(player1,player2):
 	global player_chemistry
-	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1)
-	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2)
-	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1)
-	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2)
+	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
+	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
+	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
+	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
 
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
@@ -167,7 +175,7 @@ def opposite_team_chem(player1,player2):
 		row=df1.collect()
 		to_insert=df1[2]+(sign*change)
 		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
-	
+'''	
 def calc_contrib_and_rating(i,stored):
 	global Player_RDD
 	global Metrics_RDD
@@ -205,9 +213,12 @@ def calc_contrib_and_rating(i,stored):
 		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
 		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
 		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
 		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
 		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
 		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
+		
 	
 	for j in playedtime:
 		df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
@@ -217,20 +228,58 @@ def calc_contrib_and_rating(i,stored):
 		foul=Player_RDD.select("numFouls",F.when(F.col("Id")==j))
 		own_goal=Player_RDD.select("ownGoals",F.when(F.col("Id")==j))
 		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
+		
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
 		player_prev_rating=Player_RDD.select("rating",F.when(F.col("Id")==j))
 		Player_RDD=Player_RDD.withColumn("previousRating",F.when(F.col("Id")==j,(player_rating_prev)).otherwise(F.col("previousRating")))
 		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+player_prev_rating)/2)).otherwise(F.col("rating")))
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(F.col(numMatches)+1)).otherwise(F.col("numMatches")))
 	return bench,lineup,substitutions
 
 
 def insert_into_matches(stored):
 	global match_cols
 	global Matches_RDD
-	#match_cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
-	for i in stored["teamsData"]:
+	global Teams_RDD
+	global ssc
+	global first
 	
-	newRow = spark.createDataFrame([stored['status'],stored['date'],stored['label'],stored['duration'],stored['winner'],stored['venue'],stored['']],match_cols)
-	Matches_RDD= Matches_RDD.union(newRow)
+	if first==1:
+		#match_cols=['date','label','duration','winner','venue','goals','own_goals','yellow_cards','red_cards']
+		Matches_RDD=ssc.createDataFrame(stored)#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		sql.registerDataFrameAsTable(Matches_RDD, "Matches")
+		first=0
+	else:
+		#newRow=stored.select("status","label","duration","winner","venue","gameweek","teamsData")
+		newRow=ssc.createDataFrame(stored)#.select("status","label","duration","winner","venue","gameweek","teamsData")
+		Matches_RDD= Matches_RDD.union(newRow)
+	print(Matches_RDD.collect())
+'''
+		if stored['winner']==0:
+			winner=None
+		else:
+			winner=Teams_RDD.filter(Teams_RDD.Id==teamId).select("name").collect()[0][0]
+		if len(stored['teamsData'])==2:
+			for i in stored['teamsData']:
+				goals=[]
+				own_goals=[]
+				yellow_cards=[]
+				red_cards=[]
+				team=stored['teamsData'][i]
+				teamname=Teams_RDD.filter(Teams_RDD.Id==team['teamId']).select("name").collect()[0][0]
+				if team['hasFormation']==1:
+					for j in team['formation']['bench']+team['formation']['lineup']:
+							player_name=Player_RDD.filter(Player_RDD.Id==j['playerId']).select("name").collect()[0][0]
+							if j['ownGoals']!="0":
+								own_goals.append([player_name,teamname,j['ownGoals']])
+							if j['goals']!="0":
+								goals.append([player_name,teamname,j['goals']])
+							if j['yellowCards']!="0":
+								yellow_cards.append(player_name)
+							if j['redCards']!="0":
+								red_cards.append(player_name)
+
+		'''
 '''
 #TRIAL
 player=65880
@@ -250,8 +299,10 @@ def calc_metrics(rdd):
 	stored=[]
 	for data in rdds:
 		print(data)
+		
 		if 'eventId' in data:
 			player=data['playerId']
+			'''			
 			df2=Player_RDD.filter(Player_RDD.Id == player)
 			if df2.collect():
 				values=df2.collect()[0]
@@ -418,14 +469,14 @@ def calc_metrics(rdd):
 					permatch_own_goals=metrics_values[20]
 					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(permatch_own_goals+1)).otherwise(F.col("ownGoals")))
 					
-					
+				'''	
 				#checking Metrics per match and player profiles updated	
 				#df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
 				#print(df2.collect()[0])
-				'''
-				df2=Player_RDD.filter(Player_RDD.Id == player)
-				print(df2.collect()[0])
-				'''
+				#'''
+				#df2=Player_RDD.filter(Player_RDD.Id == player)
+				#print(df2.collect()[0])
+				#'''
 		else:
 			
 			#its match data dict
@@ -487,7 +538,7 @@ def calc_metrics(rdd):
 
 
 # Runnning the User CLI as a separate Thread
-thread = Thread(target = start_user_service, args=(Metrics_RDD, Players_RDD))
+thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
 thread.start()
 
 
