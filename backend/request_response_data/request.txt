@@ -2,5 +2,5 @@
 {"req_type": 1, "date": "2020-08-28", "team1": {"name": "Chudley Canons", "player1": "Joey Jenkins", "player2": "Joey Jenkins", "player3": "Joey Jenkins", "player4": "Joey Jenkins", "player5": "Joey Jenkins", "player6": "Joey Jenkins", "player7": "Joey Jenkins", "player8": "Joey Jenkins", "player9": "Joey Jenkins", "player10": "Joey Jenkins", "player11": "Joey Jenkins"}, "team2": {"name": "Holy Head Harpies", "player1": "Gwenog Jones", "player2": "Gwenog Jones", "player3": "Gwenog Jones", "player4": "Gwenog Jones", "player5": "Gwenog Jones", "player6": "Gwenog Jones", "player7": "Gwenog Jones", "player8": "Gwenog Jones", "player9": "Gwenog Jones", "player10": "Gwenog Jones", "player11": "Gwenog Jones"}}
 {"req_type": 2, "name": "Paul Pogba"}
 {"req_type": 2, "name": "Harry Potter"}
-{"req_type": 3, "date": "2017-12-13", "label": "Southampton-Leicester City,1-4"}
-{"req_type": 3, "date": "2020-09-3", "label": "Lazio-Internationale,2-3"}
+{"req_type": 3, "date": "2017-12-13", "label": "Southampton - Leicester City, 1 - 4"}
+{"req_type": 3, "date": "2020-09-3", "label": "Lazio - Internationale, 2 - 3"}
