@@ -103,13 +103,13 @@ first=1
 player_ids=sorted([i[0] for i in (Player_RDD.select('Id')).collect()])
 columns=['player1','player2','chemistry']
 
-player_chemistry = ssc.createDataFrame([player_ids[0], player_ids[1], 0.5], columns)
+#player_chemistry = ssc.createDataFrame([[player_ids[0], player_ids[1], 0.5]], columns)
+rows=[]
 for i in range(len(player_ids)):
 	for j in range(i+1,len(player_ids)):
-		if i==0 and j==1:
-			continue
-		newRow = ssc.createDataFrame([player_ids[i],player_ids[j], 0.5],columns)
-		player_chemistry = player_chemistry.union(newRow)
+		rows.append([player_ids[i],player_ids[j], 0.5])
+player_chemistry = ssc.createDataFrame(rows,columns)
+#player_chemistry = player_chemistry.union(newRow)
 '''
 for j in range(i+2,len(player_ids)):
 	newRow = ssc.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
@@ -284,7 +284,7 @@ def insert_into_matches(stored):
 	else:
 		newRow=ssc.createDataFrame([stored])
 		Matches_RDD= Matches_RDD.union(newRow)
-	print(Matches_RDD.collect())
+	print("MATCH INFO ",Matches_RDD.collect())
 	'''
 		if stored['winner']==0:
 			winner=None
@@ -500,10 +500,10 @@ def calc_metrics(rdd):
 					permatch_own_goals=metrics_values[20]
 					Metrics_RDD=Metrics_RDD.withColumn("ownGoals",F.when(F.col("Id")==player,(permatch_own_goals+1)).otherwise(F.col("ownGoals")))
 					
-				'
+				
 				#checking Metrics per match and player profiles updated	
-				#df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
-				#print(df2.collect()[0])
+				df2=Metrics_RDD.filter(Metrics_RDD.Id == player)
+				print("UPDATED METRICS FOR THE PLAYER FOR THE EVENT", df2.collect()[0])
 				#
 				#df2=Player_RDD.filter(Player_RDD.Id == player)
 				#print(df2.collect()[0])
