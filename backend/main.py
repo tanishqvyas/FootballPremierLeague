@@ -852,7 +852,7 @@ def request_handler(req_type, request, Metrics_RDD, Player_RDD, Matches_RDD, Tea
 
 # User Interface Handler
 def start_user_service():
-	time.sleep(200)
+	time.sleep(20)
 	global Metrics_RDD
 	global Player_RDD
 	global Matches_RDD
