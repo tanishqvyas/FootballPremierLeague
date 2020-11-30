@@ -285,32 +285,7 @@ def insert_into_matches(stored):
 		newRow=ssc.createDataFrame([stored])
 		Matches_RDD= Matches_RDD.union(newRow)
 	print("MATCH INFO ",Matches_RDD.collect())
-	'''
-		if stored['winner']==0:
-			winner=None
-		else:
-			winner=Teams_RDD.filter(Teams_RDD.Id==teamId).select("name").collect()[0][0]
-		if len(stored['teamsData'])==2:
-			for i in stored['teamsData']:
-				goals=[]
-				own_goals=[]
-				yellow_cards=[]
-				red_cards=[]
-				team=stored['teamsData'][i]
-				teamname=Teams_RDD.filter(Teams_RDD.Id==team['teamId']).select("name").collect()[0][0]
-				if team['hasFormation']==1:
-					for j in team['formation']['bench']+team['formation']['lineup']:
-							player_name=Player_RDD.filter(Player_RDD.Id==j['playerId']).select("name").collect()[0][0]
-							if j['ownGoals']!="0":
-								own_goals.append([player_name,teamname,j['ownGoals']])
-							if j['goals']!="0":
-								goals.append([player_name,teamname,j['goals']])
-							if j['yellowCards']!="0":
-								yellow_cards.append(player_name)
-							if j['redCards']!="0":
-								red_cards.append(player_name)
 
-	'''
 '''
 #TRIAL
 player=65880
@@ -569,8 +544,8 @@ def calc_metrics(rdd):
 
 
 # Runnning the User CLI as a separate Thread
-#thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD))
-#thread.start()
+thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD, Matches_RDD, Teams_RDD, player_chemistry))
+thread.start()
 
 
 # Read the streamed data
