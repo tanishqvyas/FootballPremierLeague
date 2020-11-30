@@ -65,19 +65,75 @@ def get_player_strength(player_rating, list_of_coefficients):
 
 
 # Function to calculate Team Strength
-def get_team_strength():
+def get_team_strength(list_of_player_strength):
 
-	cur_strength = 0
-
-	# Find average of all team players
-	for player in range(11):
-		pass
-
-		# cur_strength += get_player_strength(player)
-
-	return cur_strength / 11
+	return sum(list_of_player_strength) / 11
 
 # Function to calculate Strengths of two teams
-def get_strengths_of_two_teams():
+def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
+	
+	strength_of_A = 0
+	strength_of_B = 0
 
-	pass 
+	player_strength_teamA = []
+	player_strength_teamB = []
+
+	for player1 in range(1, 12):
+
+		teamA_player_coeff = []
+		teamB_player_coeff = []
+
+		teamA_player_rating = Player_RDD.filter(Player_RDD.name == request["team1"]["player" + str(player1)]).select("rating").collect()[0][0]
+		teamB_player_rating = Player_RDD.filter(Player_RDD.name == request["team2"]["player" + str(player1)]).select("rating").collect()[0][0]
+
+		for player2 in range(1, 12):
+
+			# no self loop
+			if(player1 == player2):
+				continue
+			
+			# Get player names
+			teamA_player1_name = request["team1"]["player" + str(player1)]
+			teamA_player2_name = request["team1"]["player" + str(player2)]
+
+			teamB_player1_name = request["team2"]["player" + str(player1)]
+			teamB_player2_name = request["team2"]["player" + str(player2)]
+
+			try:
+				# Get Player IDs
+				teamA_player1_ID = Player_RDD.filter(Player_RDD.name == teamA_player1_name).select("Id").collect()[0][0]
+				teamA_player2_ID = Player_RDD.filter(Player_RDD.name == teamA_player2_name).select("Id").collect()[0][0]
+
+				teamB_player1_ID = Player_RDD.filter(Player_RDD.name == teamB_player1_name).select("Id").collect()[0][0]
+				teamB_player2_ID = Player_RDD.filter(Player_RDD.name == teamB_player2_name).select("Id").collect()[0][0]
+
+			except:
+				return None, None
+
+			# Calculate player strengths
+			if(teamA_player1_ID < teamA_player2_ID):
+				
+				teamA_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamA_player1_ID & player_chemistry.player2 == teamA_player2_ID)).collect()[0][2]
+				teamB_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamB_player1_ID & player_chemistry.player2 == teamB_player2_ID)).collect()[0][2]
+
+			else:
+
+				teamA_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamA_player2_ID & player_chemistry.player2 == teamA_player1_ID)).collect()[0][2]
+				teamB_player_coeff.append(player_chemistry.filter(player_chemistry.player1 == teamB_player2_ID & player_chemistry.player2 == teamB_player1_ID)).collect()[0][2]
+		
+
+		
+
+		# Compute Strengths
+		teamA_player_strength = get_player_strength(teamA_player_rating , teamA_player_coeff)
+		teamB_player_strength = get_player_strength(teamB_player_rating , teamB_player_coeff)
+
+		player_strength_teamA.append(teamA_player_strength)
+		player_strength_teamB.append(teamB_player_strength)
+	
+
+	# Get Team Strengths
+	strength_of_A = get_team_strength(player_strength_teamA)
+	strength_of_B = get_team_strength(player_strength_teamB)
+
+	return strength_of_A, strength_of_B 

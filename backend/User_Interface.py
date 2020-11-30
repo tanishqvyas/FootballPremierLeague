@@ -95,10 +95,13 @@ def handle_request_one(request, Metrics_RDD, Player_RDD, player_chemistry):
     response["team2"]["name"] = request["team2"]["name"]
 
     # Compute Strengths of Each Team
-    # strength_of_team1, strength_of_team2 = 
+    strength_of_team1, strength_of_team2 = get_strengths_of_two_teams(Player_RDD, player_chemistry, request)
+    if(strength_of_team1 == None or strength_of_team2 == None):
+        valid_request = False
+        msg = "Player Does Not Exist"
 
     # Fetch Winning Chances for Teams
-    # response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
+    response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
     
 
     #-----------------------------Returning the response----------------------------------
