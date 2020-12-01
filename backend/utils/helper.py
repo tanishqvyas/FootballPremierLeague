@@ -1,4 +1,7 @@
 ## HELPER FUNCTIONS
+from pyspark.sql.functions import col
+from pyspark.ml.clustering import KMeans
+from pyspark.ml.feature import VectorAssembler
 
 # Function to computer the Pass Accuracy
 def get_pass_accuracy(num_acc_normal_passes, num_acc_key_passes, num_normal_passes, num_key_passes):
@@ -80,7 +83,34 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 
 	player_strength_teamA = []
 	player_strength_teamB = []
-
+	#################################################################################
+	#CLUSTERING
+	requested_player_names=[request["team1"]["player" + str(i)] for i in range(1,12)]+[request["team2"]["player" + str(i)] for i in range(1,12)]
+	requested_players_profile=Player_RDD.filter(col("name").isin(requested_players_names))
+	profiles=requested_players_profile.collect()
+	if len(profiles)!=22:
+		print("Players do not exist")
+		return None,None
+	
+	#seeing if there are any players with less than 5 matches and cluster only then
+	players_to_approx=requested_players_profile.filter(col("numMatches")<5).collect()
+	if len(players_to_approx)!=0:
+		#MUST CONVERT EVERY COLUMN TO FLOAT IDK HOW
+		
+		
+		#['name','birthArea','birthDate','foot','role','height','passportArea','weight', 'Id','numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses','rating','numMatches']
+		vecAssembler = VectorAssembler(inputCols=['height','weight', 'Id','numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses','rating','numMatches'], outputCol="features")
+		df_kmeans = vecAssembler.transform(Player_RDD).select('Id','name','rating','features')
+		kmeans = KMeans().setK(5).setSeed(1).setFeaturesCol("features")
+		model = kmeans.fit(df_kmeans)
+		transformed = model.transform(df_kmeans).select('id','name','rating', 'prediction')
+		rows = transformed.collect()
+		
+		
+	
+	
+	#################################################################################
+	
 	for player1 in range(1, 12):
 
 		teamA_player_coeff = []

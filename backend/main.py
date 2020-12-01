@@ -8,6 +8,7 @@ from pyspark.sql.session import SparkSession
 from pyspark.sql import functions as F
 import pyspark.sql.types as tp
 from pyspark.sql.functions import lit
+
 import json
 import os
 import socket
@@ -21,7 +22,9 @@ from threading import Thread
 from utils.helper import *
 # from User_Interface import start_user_service
 
-#test
+
+####################################################################################################
+#CREATION AND INITIALIZATION BEGINS
 
 # Data Paths
 Player_CSV_Path = os.path.join("..", "data", "players.csv")
@@ -59,7 +62,6 @@ tp.StructField(name= 'accKeyPasses', 		dataType= tp.IntegerType(),  nullable= Fa
 tp.StructField(name= 'rating', 		dataType= tp.FloatType(),  nullable= False),
 tp.StructField(name= 'numMatches', 		dataType= tp.IntegerType(),  nullable= False)
 ])
-
 
 # Teams Schema
 Teams_schema = tp.StructType([
@@ -101,7 +103,6 @@ match_cols=["status","label","duration","winner","venue","gameweek","teamsData"]
 first=1
 
 
-
 #Creating and Initializing player chemistry
 player_ids=sorted([i[0] for i in (Player_RDD.select('Id')).collect()])
 columns=['player1','player2','chemistry']
@@ -112,19 +113,12 @@ for i in range(len(player_ids)):
 	for j in range(i+1,len(player_ids)):
 		rows.append([player_ids[i],player_ids[j], 0.5])
 player_chemistry = ssc.createDataFrame(rows,columns)
-#player_chemistry = player_chemistry.union(newRow)
-'''
-for j in range(i+2,len(player_ids)):
-	newRow = ssc.createDataFrame([player_ids[0][0],player_ids[i][0], 0.5],columns)
-	player_chemistry = player_chemistry.union(newRow)
-	
-for i in range(1,len(player_ids)):
-	for j in range(i+1,len(player_ids)):
-		newRow = ssc.createDataFrame([player_ids[i][0],player_ids[j][0], 0.5],columns)
-	player_chemistry = player_chemistry.union(newRow)
-'''
+
+#CREATION AND INITIALIZATION ENDS
+#############################################################################################################
 
 
+#METRIC CALCULATION HELPERS
 
 #Same teams chemistry:
 def same_team_chem(player1,player2):
@@ -134,12 +128,7 @@ def same_team_chem(player1,player2):
 	prev2=Player_RDD.filter(Player_RDD.Id==player2).select("previousRating").collect()[0][0]
 	r1=Player_RDD.filter(Player_RDD.Id==player1).select("rating").collect()[0][0]
 	r2=Player_RDD.filter(Player_RDD.Id==player2).select("rating").collect()[0][0]
-	'''
-	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
-	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
-	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
-	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
-	'''
+
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
 		sign=1
@@ -153,22 +142,7 @@ def same_team_chem(player1,player2):
 	row=df1.collect()
 	to_insert=row[2]+(sign*change)
 	player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2 & F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
-	'''
-	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
-	df1 = df1.filter(df1.player2.contains(player2))
 
-	if(df1==None):
-		df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
-		df1 = df1.filter(df1.player2.contains(player1))
-		row=df1.collect()
-		to_insert=df1[2]+(sign*change)
-		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2,F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
-	else:
-		row=df1.collect()
-		to_insert=df1[2]+(sign*change)
-		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
-
-	'''
 def opposite_team_chem(player1,player2):
 	global player_chemistry
 	global Player_RDD
@@ -176,12 +150,7 @@ def opposite_team_chem(player1,player2):
 	prev2=Player_RDD.filter(Player_RDD.Id==player2).select("previousRating").collect()[0][0]
 	r1=Player_RDD.filter(Player_RDD.Id==player1).select("rating").collect()[0][0]
 	r2=Player_RDD.filter(Player_RDD.Id==player2).select("rating").collect()[0][0]
-	'''
-	prev1=Player_RDD.select("previousRating",F.when(F.col("Id")==player1))
-	prev2=Player_RDD.select("previousRating",F.when(F.col("Id")==player2))
-	r1=Player_RDD.select("rating",F.when(F.col("Id")==player1))
-	r2=Player_RDD.select("rating",F.when(F.col("Id")==player2))
-	'''
+
 	change=abs(((r1-prev1)+(r2-prev2))/2)
 	if((r1-prev1) <0 and (r2-prev2) <0) or ((r1-prev1)>0 and (r2-prev2)>0):
 		sign=-1
@@ -195,22 +164,32 @@ def opposite_team_chem(player1,player2):
 	row=df1.collect()
 	to_insert=row[2]+(sign*change)
 	player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2 & F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
-	
-	'''
-	df1 = player_chemistry.filter(player_chemistry.player1.contains(player1))
-	df1 = df1.filter(df1.player2.contains(player2))
 
-	if(df1==None):
-		df1 = player_chemistry.filter(player_chemistry.player1.contains(player2))
-		df1 = df1.filter(df1.player2.contains(player1))
-		row=df1.collect()
-		to_insert=df1[2]+(sign*change)
-		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player2,F.col("player2")==player1,to_insert).otherwise(F.col("chemistry")))
+
+
+##############################################################################################################
+
+#CREATING AND STORING MATCH INFO
+def insert_into_matches(stored):
+	global match_cols
+	global Matches_RDD
+	global Teams_RDD
+	global ssc
+	global first
+	global sql
+	
+	if first==1:
+		Matches_RDD=ssc.createDataFrame([stored])
+		sql.registerDataFrameAsTable(Matches_RDD, "Matches")
+		first=0
 	else:
-		row=df1.collect()
-		to_insert=df1[2]+(sign*change)
-		player_chemistry=player_chemistry.withColumn("chemistry",F.when(F.col("player1")==player1,F.col("player2")==player2,to_insert).otherwise(F.col("chemistry")))
-	'''
+		newRow=ssc.createDataFrame([stored])
+		Matches_RDD= Matches_RDD.union(newRow)
+	print("MATCH INFO ",Matches_RDD.collect())
+
+
+##############################################################################################################
+#MAJOR METRIC CALCULATION FUNCTIONS
 def calc_contrib_and_rating(i,stored):
 	global Player_RDD
 	global Metrics_RDD
@@ -250,10 +229,14 @@ def calc_contrib_and_rating(i,stored):
 		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
 		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(numMatches+1)).otherwise(F.col("numMatches")))
 		
+		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
+		#CHECK THIS 
+		'''
 		if (numMatches+1)>=5:
 			Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
 		else:
 			print("CLUSTERING AND AVERAGING")
+		'''	
 	
 	for j in playedtime:
 		df2=Metrics_RDD.filter(Metrics_RDD.Id == j[0])
@@ -261,43 +244,21 @@ def calc_contrib_and_rating(i,stored):
 		contrib=j[1]*get_player_contribution(values[5], values[9],values[13],values[17])
 		Metrics_RDD=Metrics_RDD.withColumn("contribution",F.when(F.col("Id")==j[0],contrib).otherwise(F.col("contribution")))
 		
-		foul,own_goal,prev_rating,numMatches=Player_RDD.filter(Player_RDD.Id==j).select("numFouls","ownGoals","rating","numMatches").collect()[0]
+		foul,own_goal,prev_rating,numMatches=Player_RDD.filter(Player_RDD.Id==j[0]).select("numFouls","ownGoals","rating","numMatches").collect()[0]
 		playerPerformance=contrib*pow(0.995,foul)*pow(0.95,own_goal)
-		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j,(numMatches+1)).otherwise(F.col("numMatches")))
+		Player_RDD=Player_RDD.withColumn("numMatches",F.when(F.col("Id")==j[0],(numMatches+1)).otherwise(F.col("numMatches")))
 		
+		#CHECK THIS
+		Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j[0],((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
+		'''
 		if (numMatches+1)>=5:
 			Player_RDD=Player_RDD.withColumn("rating",F.when(F.col("Id")==j,((playerPerformance+prev_rating)/2)).otherwise(F.col("rating")))
 		else:
 			print("CLUSTERING AND AVERAGING")
+		'''
 	return bench,lineup,substitutions
 
 
-def insert_into_matches(stored):
-	global match_cols
-	global Matches_RDD
-	global Teams_RDD
-	global ssc
-	global first
-	global sql
-	
-	if first==1:
-		Matches_RDD=ssc.createDataFrame([stored])
-		sql.registerDataFrameAsTable(Matches_RDD, "Matches")
-		first=0
-	else:
-		newRow=ssc.createDataFrame([stored])
-		Matches_RDD= Matches_RDD.union(newRow)
-	print("MATCH INFO ",Matches_RDD.collect())
-
-'''
-#TRIAL
-player=65880
-df2 =Metrics_RDD.filter(Metrics_RDD.Id == player)
-print(df2.collect()[0][0])
-Metrics_RDD=Metrics_RDD.withColumn("Id",F.when(F.col("Id")==player,1000).otherwise(F.col("Id")))
-print(Metrics_RDD.show(5))
-Function to process the match and event Jsons
-'''
 def calc_metrics(rdd):
 	global Metrics_RDD
 	global Matches_RDD
@@ -491,7 +452,6 @@ def calc_metrics(rdd):
 			
 			#its match data dict
 			print("match data")
-			#INSERT INTO Matches_RDD
 			
 			
 			#calculating previous match data after the events
@@ -556,9 +516,9 @@ def calc_metrics(rdd):
 
 
 
+#################################################################################################################
 
-##########################################################################################
-
+#USER INTERFACE FUNCTIONS
 
 # Function to handle request 1
 def handle_request_one(request, Metrics_RDD, Player_RDD, player_chemistry):
@@ -659,7 +619,7 @@ def handle_request_one(request, Metrics_RDD, Player_RDD, player_chemistry):
 		# Fetch Winning Chances for Teams
 		response["team1"]["winning chance"], response["team2"]["winning chance"] = get_chances_of_winning(strength_of_team1, strength_of_team2)
 
-	#-----------------------------Returning the response----------------------------------
+	#-----------------------------Returning the response-----------------------
 	if valid_request:
 		return response
 	else:
@@ -917,22 +877,10 @@ def start_user_service():
 
 
 
+########################################################################################################################
 
+#STREAMING 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#############################################################################################3
 
 # Runnning the User CLI as a separate Thread
 # thread = Thread(target = start_user_service, args=(Metrics_RDD, Player_RDD, Matches_RDD, Teams_RDD, player_chemistry))
