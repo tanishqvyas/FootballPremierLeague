@@ -86,7 +86,7 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 	#################################################################################
 	#CLUSTERING
 	requested_player_names=[request["team1"]["player" + str(i)] for i in range(1,12)]+[request["team2"]["player" + str(i)] for i in range(1,12)]
-	requested_players_profile=Player_RDD.filter(col("name").isin(requested_players_names))
+	requested_players_profile=Player_RDD.filter(col("name").isin(requested_player_names))
 	profiles=requested_players_profile.collect()
 	if len(profiles)!=22:
 		print("Players do not exist")
@@ -100,13 +100,19 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 		
 		#['name','birthArea','birthDate','foot','role','height','passportArea','weight', 'Id','numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses','rating','numMatches']
 		vecAssembler = VectorAssembler(inputCols=['height','weight', 'Id','numFouls','numGoals','numOwnGoals','passAcc','shotsOnTarget','normalPasses','keyPasses','accNormalPasses','accKeyPasses','rating','numMatches'], outputCol="features")
-		df_kmeans = vecAssembler.transform(Player_RDD).select('Id','name','rating','features')
+		df_kmeans = vecAssembler.transform(Player_RDD)#.select('Id','name','numMatches','rating','features')
 		kmeans = KMeans().setK(5).setSeed(1).setFeaturesCol("features")
 		model = kmeans.fit(df_kmeans)
-		transformed = model.transform(df_kmeans).select('id','name','rating', 'prediction')
-		rows = transformed.collect()
+		transformed = model.transform(df_kmeans)#.select('Id','name','numMatches','rating', 'prediction')
+		#rows = transformed.collect()
 		
-		
+		avg_rating=transformed.groupBy("prediction").agg({'rating':'avg'})
+		print(avg_rating.schema)
+		print(avg_rating.show())
+
+		#temp=transformed.join(avg_rating, transformed.prediction == avg_rating.prediction, 'outer').select("Id","name","rating")
+		#transformed=transformed.withColumn(transformed.prediction,col("prediction")=)
+
 	
 	
 	#################################################################################
