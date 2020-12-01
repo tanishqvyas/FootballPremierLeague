@@ -133,6 +133,9 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 			return None, None
 		else:
 			teamA_player_rating = teamA_player_rating[0][0]
+			if teamA_player_rating<0.2:
+				print("Player ",player1," of team1 has retired")
+				return None,None
 
 		teamB_player_rating = Player_RDD.filter(Player_RDD.name == request["team2"]["player" + str(player1)]).select("rating").collect()
 		
@@ -142,6 +145,9 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 			
 		else:
 			teamB_player_rating = teamB_player_rating[0][0]
+			if teamB_player_rating<0.2:
+				print("Player ",player1," of team2 has retired")
+				return None,None
 
 
 		for player2 in range(1, 12):
