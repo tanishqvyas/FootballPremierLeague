@@ -1,5 +1,5 @@
 ## HELPER FUNCTIONS
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col,when
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
 
@@ -103,16 +103,21 @@ def get_strengths_of_two_teams(Player_RDD, player_chemistry, request):
 		df_kmeans = vecAssembler.transform(Player_RDD)#.select('Id','name','numMatches','rating','features')
 		kmeans = KMeans().setK(5).setSeed(1).setFeaturesCol("features")
 		model = kmeans.fit(df_kmeans)
-		transformed = model.transform(df_kmeans)#.select('Id','name','numMatches','rating', 'prediction')
-		#rows = transformed.collect()
+		transformed = model.transform(df_kmeans)
 		
 		avg_rating=transformed.groupBy("prediction").agg({'rating':'avg'})
-		print(avg_rating.schema)
-		print(avg_rating.show())
+		#print(avg_rating.schema)	#prediction,avg(rating)
+		#print(avg_rating.show())
 
-		#temp=transformed.join(avg_rating, transformed.prediction == avg_rating.prediction, 'outer').select("Id","name","rating")
-		#transformed=transformed.withColumn(transformed.prediction,col("prediction")=)
+		temp=transformed.join(avg_rating, transformed.prediction == avg_rating.prediction, 'outer').select(transformed.Id,transformed.name,transformed.numMatches,"avg(rating)")
+		players_to_update=temp.filter(col("name").isin(requested_player_names)).filter(col("numMatches")<5).collect()
 
+		for row in players_to_update:
+			to_insert=row["avg(rating)"]
+			player=row["Id"]
+
+			#Updation ratings in Player profile
+			Player_RDD=Player_RDD.withColumn("rating",when(col("Id")==player,to_insert).otherwise(col("rating")))
 	
 	
 	#################################################################################
